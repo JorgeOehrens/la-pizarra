@@ -1,93 +1,223 @@
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 import { AppShell } from "@/components/app-shell"
-import { ChevronRight, User, Bell, Shield, LogOut, HelpCircle, Moon } from "lucide-react"
+import { ChevronRight, User, LogOut } from "lucide-react"
 import Link from "next/link"
+import { cn } from "@/lib/utils"
+import { logout } from "@/app/auth/actions"
 
-const menuItems = [
-  { icon: User, label: "Editar perfil", href: "/profile/edit" },
-  { icon: Bell, label: "Notificaciones", href: "/profile/notifications" },
-  { icon: Shield, label: "Privacidad", href: "/profile/privacy" },
-  { icon: Moon, label: "Apariencia", href: "/profile/appearance" },
-  { icon: HelpCircle, label: "Ayuda", href: "/profile/help" },
-]
+const POSITION_LABEL: Record<string, string> = {
+  goalkeeper: "Portero",
+  defender: "Defensa",
+  midfielder: "Mediocampista",
+  forward: "Delantero",
+}
 
-export default function ProfilePage() {
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+  return name.slice(0, 2).toUpperCase()
+}
+
+export default async function ProfilePage() {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect("/auth/login")
+
+  // Parallel: profile + membership
+  const [profileRes, membershipRes] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("username, display_name, avatar_url")
+      .eq("id", user.id)
+      .maybeSingle(),
+
+    supabase
+      .from("team_members")
+      .select("team_id, role, jersey_number, position, teams(name)")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle(),
+  ])
+
+  const profile = profileRes.data
+  const membership = membershipRes.data
+  const team = membership?.teams as unknown as { name: string } | null
+
+  const displayName = profile?.display_name || profile?.username || "Jugador"
+  const initials = getInitials(displayName)
+
+  // Fetch stats + attendance in parallel only if the user is in a team
+  let stats = { matches_played: 0, goals: 0, assists: 0 }
+  let confirmedAttendanceCount = 0
+
+  if (membership?.team_id) {
+    const [statsRes, attendanceRes] = await Promise.all([
+      supabase
+        .from("player_stats")
+        .select("matches_played, goals, assists")
+        .eq("player_id", user.id)
+        .eq("team_id", membership.team_id)
+        .maybeSingle(),
+
+      supabase
+        .from("match_attendance")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("status", "confirmed"),
+    ])
+
+    if (statsRes.data) {
+      stats = {
+        matches_played: Number(statsRes.data.matches_played),
+        goals: Number(statsRes.data.goals),
+        assists: Number(statsRes.data.assists),
+      }
+    }
+    confirmedAttendanceCount = attendanceRes.count ?? 0
+  }
+
+  const goalsPerMatch =
+    stats.matches_played > 0
+      ? (stats.goals / stats.matches_played).toFixed(1)
+      : "—"
+
+  const attendanceRate =
+    stats.matches_played > 0
+      ? Math.round((confirmedAttendanceCount / stats.matches_played) * 100)
+      : null
+
+  const positionLabel = membership?.position ? POSITION_LABEL[membership.position] : null
+  const jerseyLabel = membership?.jersey_number != null ? `#${membership.jersey_number}` : null
+  const subLabel = [positionLabel, jerseyLabel].filter(Boolean).join(" · ")
+  const isAdmin = membership?.role === "admin"
+
   return (
     <AppShell>
-      <div className="px-4 pt-6 pb-4">
-        {/* Header */}
+      <div className="px-4 pt-6 pb-8">
         <header className="mb-8">
           <h1 className="font-display text-3xl">Perfil</h1>
         </header>
 
-        {/* User Card */}
-        <div className="bg-card rounded-xl p-5 mb-6">
+        {/* ── User card ─────────────────────────────────── */}
+        <div className="bg-card rounded-2xl p-5 mb-4">
           <div className="flex items-center gap-4">
             {/* Avatar */}
-            <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center">
-              <span className="font-display text-2xl text-accent-foreground">CM</span>
+            <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center shrink-0 overflow-hidden">
+              {profile?.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={profile.avatar_url}
+                  alt={displayName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="font-display text-2xl text-accent-foreground">
+                  {initials}
+                </span>
+              )}
             </div>
-            
-            {/* Info */}
-            <div className="flex-1">
-              <h2 className="font-display text-xl">Carlos Martínez</h2>
-              <p className="text-sm text-muted-foreground">Mediocampista · #10</p>
-              <p className="text-xs text-accent mt-1">La Máquina FC</p>
+
+            {/* Name + details */}
+            <div className="flex-1 min-w-0">
+              <h2 className="font-display text-xl truncate">{displayName}</h2>
+              {profile?.username && (
+                <p className="text-xs text-muted-foreground">@{profile.username}</p>
+              )}
+              {subLabel && (
+                <p className="text-sm text-muted-foreground mt-0.5">{subLabel}</p>
+              )}
+              {team && (
+                <p className="text-xs text-accent mt-1 truncate">{team.name}</p>
+              )}
             </div>
           </div>
-          
+
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 mt-6 pt-5 border-t border-border">
+          <div className="grid grid-cols-4 gap-3 mt-6 pt-5 border-t border-border/40">
             <div className="text-center">
-              <p className="font-display text-2xl">42</p>
-              <p className="text-[10px] text-muted-foreground uppercase">Partidos</p>
+              <p className="font-display text-xl tabular-nums">{stats.matches_played}</p>
+              <p className="text-[9px] text-muted-foreground uppercase mt-0.5 leading-tight">Partidos</p>
             </div>
             <div className="text-center">
-              <p className="font-display text-2xl">15</p>
-              <p className="text-[10px] text-muted-foreground uppercase">Goles</p>
+              <p className="font-display text-xl text-accent tabular-nums">{stats.goals}</p>
+              <p className="text-[9px] text-muted-foreground uppercase mt-0.5 leading-tight">Goles</p>
             </div>
             <div className="text-center">
-              <p className="font-display text-2xl">28</p>
-              <p className="text-[10px] text-muted-foreground uppercase">Asistencias</p>
+              <p className="font-display text-xl tabular-nums">{stats.assists}</p>
+              <p className="text-[9px] text-muted-foreground uppercase mt-0.5 leading-tight">Asistencias</p>
+            </div>
+            <div className="text-center">
+              <p className="font-display text-xl tabular-nums">{goalsPerMatch}</p>
+              <p className="text-[9px] text-muted-foreground uppercase mt-0.5 leading-tight">Goles/PJ</p>
             </div>
           </div>
+
+          {/* Attendance rate */}
+          {attendanceRate !== null && (
+            <div className="mt-3 pt-3 border-t border-border/30">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs text-muted-foreground uppercase tracking-wider">Asistencia</span>
+                <span className="font-display text-base tabular-nums">
+                  {attendanceRate}%
+                </span>
+              </div>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-accent rounded-full transition-all"
+                  style={{ width: `${attendanceRate}%` }}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Role Badge */}
-        <div className="bg-accent/10 rounded-lg p-4 mb-6 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium">Rol en el equipo</p>
-            <p className="text-xs text-muted-foreground">Administrador</p>
+        {/* ── Role badge ────────────────────────────────── */}
+        {membership && (
+          <div className="bg-accent/10 rounded-xl p-4 mb-6 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Rol en el equipo</p>
+              <p className="text-xs text-muted-foreground">
+                {isAdmin ? "Administrador del equipo" : "Jugador"}
+              </p>
+            </div>
+            <span className={cn(
+              "px-3 py-1 text-xs uppercase tracking-wider rounded-full font-medium",
+              isAdmin
+                ? "bg-accent text-accent-foreground"
+                : "bg-muted text-muted-foreground"
+            )}>
+              {isAdmin ? "Admin" : "Jugador"}
+            </span>
           </div>
-          <span className="px-3 py-1 bg-accent text-accent-foreground text-xs uppercase tracking-wider rounded-full">
-            Admin
-          </span>
-        </div>
+        )}
 
-        {/* Menu */}
-        <nav className="space-y-1">
-          {menuItems.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className="flex items-center gap-4 bg-card rounded-lg p-4 active:scale-[0.98] transition-transform"
-            >
-              <item.icon className="h-5 w-5 text-muted-foreground" />
-              <span className="flex-1 text-sm">{item.label}</span>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </Link>
-          ))}
+        {/* ── Menu ─────────────────────────────────────── */}
+        <nav className="space-y-1 mb-6">
+          <Link
+            href={`/players/${user.id}/edit`}
+            className="flex items-center gap-4 bg-card rounded-xl p-4 active:scale-[0.98] transition-transform"
+          >
+            <User className="h-5 w-5 text-muted-foreground" />
+            <span className="flex-1 text-sm">Editar perfil</span>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </Link>
         </nav>
 
-        {/* Logout */}
-        <button className="w-full flex items-center gap-4 bg-card rounded-lg p-4 mt-6 text-destructive active:scale-[0.98] transition-transform">
-          <LogOut className="h-5 w-5" />
-          <span className="flex-1 text-sm text-left">Cerrar sesión</span>
-        </button>
+        {/* ── Logout ───────────────────────────────────── */}
+        <form action={logout}>
+          <button
+            type="submit"
+            className="w-full flex items-center gap-4 bg-card rounded-xl p-4 text-destructive active:scale-[0.98] transition-transform"
+          >
+            <LogOut className="h-5 w-5" />
+            <span className="flex-1 text-sm text-left">Cerrar sesión</span>
+          </button>
+        </form>
 
-        {/* Version */}
-        <p className="text-center text-xs text-muted-foreground mt-8">
-          LaPizarra v1.0.0
-        </p>
+        <p className="text-center text-xs text-muted-foreground mt-8">LaPizarra v1.0.0</p>
       </div>
     </AppShell>
   )

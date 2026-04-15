@@ -1,122 +1,521 @@
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 import { AppShell } from "@/components/app-shell"
 import { StatCard } from "@/components/stat-card"
 import { MatchCard } from "@/components/match-card"
-import { ChevronRight, Calendar, Users } from "lucide-react"
+import { AttendanceWidget } from "@/components/attendance-widget"
+import Image from "next/image"
 import Link from "next/link"
+import {
+  ChevronRight,
+  Calendar,
+  Users,
+  Settings,
+  Plus,
+  UserPlus,
+  MapPin,
+} from "lucide-react"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
 
-// Mock data
-const teamData = {
-  name: "LA MÁQUINA FC",
-  winRate: 68,
-  recentForm: ["W", "W", "L", "W", "D"],
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+type Team = {
+  id: string
+  name: string
+  logo_url: string | null
+  primary_color: string
+  secondary_color: string
+  created_at: string
 }
 
-const upcomingMatch = {
-  id: "1",
-  homeTeam: "La Máquina FC",
-  awayTeam: "Deportivo Sur",
-  date: "Dom 20 Abr · 10:00",
-  competition: "Liga Amateur",
+type TeamStats = {
+  matches_played: number
+  wins: number
+  draws: number
+  losses: number
+  goals_for: number
+  goals_against: number
+  goal_difference: number
 }
 
-const recentMatches = [
-  { id: "2", homeTeam: "La Máquina FC", awayTeam: "Real Norte", homeScore: 3, awayScore: 1, date: "13 Abr", result: "win" as const },
-  { id: "3", homeTeam: "Atlético Centro", awayTeam: "La Máquina FC", homeScore: 2, awayScore: 2, date: "6 Abr", result: "draw" as const },
-  { id: "4", homeTeam: "La Máquina FC", awayTeam: "FC Oeste", homeScore: 0, awayScore: 2, date: "30 Mar", result: "loss" as const },
-]
+type Match = {
+  id: string
+  opponent_name: string
+  match_date: string
+  type: "friendly" | "league" | "cup" | "tournament"
+  status: string
+  goals_for: number | null
+  goals_against: number | null
+  venue_custom: string | null
+}
 
-const quickStats = [
-  { label: "Partidos", value: 24 },
-  { label: "Victorias", value: 16 },
-  { label: "Goles", value: 52 },
-]
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-export default function HomePage() {
+function formatDate(dateStr: string): string {
+  try {
+    return format(new Date(dateStr), "d MMM · HH:mm", { locale: es })
+  } catch {
+    return dateStr
+  }
+}
+
+function typeLabel(type: string): string {
+  const map: Record<string, string> = {
+    friendly: "Amistoso",
+    league: "Liga",
+    cup: "Copa",
+    tournament: "Torneo",
+  }
+  return map[type] ?? type
+}
+
+function matchResult(m: Match): "win" | "loss" | "draw" {
+  if (m.goals_for === null || m.goals_against === null) return "draw"
+  if (m.goals_for > m.goals_against) return "win"
+  if (m.goals_for < m.goals_against) return "loss"
+  return "draw"
+}
+
+function getFormLetter(m: Match): "W" | "L" | "D" {
+  const r = matchResult(m)
+  return r === "win" ? "W" : r === "loss" ? "L" : "D"
+}
+
+// ─── Page ────────────────────────────────────────────────────────────────────
+
+export default async function HomePage() {
+  const supabase = await createClient()
+
+  // 1. Auth guard
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect("/auth/login")
+
+  // 2. Get active team membership
+  const { data: membership } = await supabase
+    .from("team_members")
+    .select(
+      `team_id, role,
+       teams ( id, name, logo_url, primary_color, secondary_color, created_at )`
+    )
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .limit(1)
+    .maybeSingle()
+
+  if (!membership?.teams) {
+    redirect("/onboarding")
+  }
+
+  const team = membership.teams as Team
+
+  // 3. Fetch all data in parallel
+  const [statsResult, nextMatchResult, recentMatchesResult] = await Promise.all([
+    supabase
+      .from("team_stats")
+      .select("*")
+      .eq("team_id", team.id)
+      .maybeSingle(),
+
+    supabase
+      .from("matches")
+      .select("id, opponent_name, match_date, type, status, goals_for, goals_against, venue_custom")
+      .eq("team_id", team.id)
+      .eq("status", "scheduled")
+      .gt("match_date", new Date().toISOString())
+      .is("deleted_at", null)
+      .order("match_date", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+
+    supabase
+      .from("matches")
+      .select("id, opponent_name, match_date, type, status, goals_for, goals_against, venue_custom")
+      .eq("team_id", team.id)
+      .eq("status", "finished")
+      .is("deleted_at", null)
+      .order("match_date", { ascending: false })
+      .limit(5),
+  ])
+
+  const stats: TeamStats = {
+    matches_played: Number(statsResult.data?.matches_played ?? 0),
+    wins: Number(statsResult.data?.wins ?? 0),
+    draws: Number(statsResult.data?.draws ?? 0),
+    losses: Number(statsResult.data?.losses ?? 0),
+    goals_for: Number(statsResult.data?.goals_for ?? 0),
+    goals_against: Number(statsResult.data?.goals_against ?? 0),
+    goal_difference: Number(statsResult.data?.goal_difference ?? 0),
+  }
+
+  const nextMatch: Match | null = nextMatchResult.data ?? null
+  const recentMatches: Match[] = recentMatchesResult.data ?? []
+
+  // 4. Fetch my attendance for next match (if any)
+  let myNextMatchAttendance: "confirmed" | "declined" | null = null
+  if (nextMatch) {
+    const { data: attData } = await supabase
+      .from("match_attendance")
+      .select("status")
+      .eq("match_id", nextMatch.id)
+      .eq("user_id", user.id)
+      .maybeSingle()
+    myNextMatchAttendance = (attData?.status as "confirmed" | "declined" | null) ?? null
+  }
+
+  // 5. Derived values
+  const isEmpty = stats.matches_played === 0 && !nextMatch
+
+  const winRate =
+    stats.matches_played > 0
+      ? Math.round((stats.wins / stats.matches_played) * 100)
+      : 0
+
+  const recentForm = recentMatches.slice(0, 5).map(getFormLetter)
+
+  // ─── Render ────────────────────────────────────────────────────────────────
+
   return (
     <AppShell>
-      <div className="px-4 pt-6 pb-4">
-        {/* Header */}
-        <header className="mb-6">
-          <p className="label-text mb-1">Bienvenido a</p>
-          <h1 className="font-display text-4xl">{teamData.name}</h1>
-        </header>
-        
-        {/* Win Rate Card */}
-        <div className="bg-accent text-accent-foreground rounded-xl p-5 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-wider opacity-70">Tasa de victoria</p>
-              <p className="font-display text-5xl mt-1">{teamData.winRate}%</p>
+      <div className="px-4 pt-6 pb-6 max-w-lg mx-auto">
+
+        {/* ── Header ── */}
+        <header className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            {team.logo_url ? (
+              <Image
+                src={team.logo_url}
+                alt={team.name}
+                width={48}
+                height={48}
+                className="rounded-xl object-cover flex-shrink-0"
+              />
+            ) : (
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl font-bold flex-shrink-0"
+                style={{
+                  backgroundColor: team.primary_color || "#D7FF00",
+                  color: team.secondary_color || "#000000",
+                }}
+              >
+                {team.name.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                Bienvenido a
+              </p>
+              <h1 className="font-display text-2xl leading-tight truncate">
+                {team.name}
+              </h1>
             </div>
+          </div>
+          <Link
+            href="/profile"
+            className="p-2 -mr-1 text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+          >
+            <Settings className="h-5 w-5" />
+          </Link>
+        </header>
+
+        {/* ── ZONA CERO ── */}
+        {isEmpty ? (
+          <ZonaCero teamName={team.name} />
+        ) : (
+          <Dashboard
+            team={team}
+            stats={stats}
+            winRate={winRate}
+            recentForm={recentForm}
+            nextMatch={nextMatch}
+            recentMatches={recentMatches}
+            myNextMatchAttendance={myNextMatchAttendance}
+          />
+        )}
+      </div>
+    </AppShell>
+  )
+}
+
+// ─── Zona Cero ───────────────────────────────────────────────────────────────
+
+function ZonaCero({ teamName }: { teamName: string }) {
+  return (
+    <div className="space-y-4">
+      {/* Main card */}
+      <div className="rounded-2xl bg-card border border-border p-8 text-center">
+        {/* Visual */}
+        <div className="relative w-24 h-24 mx-auto mb-6">
+          <div className="absolute inset-0 bg-accent/10 rounded-full" />
+          <div className="absolute inset-3 bg-accent/15 rounded-full" />
+          <div className="absolute inset-6 bg-accent/20 rounded-full flex items-center justify-center">
+            <span className="font-display text-3xl text-accent leading-none">0</span>
+          </div>
+        </div>
+
+        <h2 className="font-display text-2xl mb-2">Tu equipo está listo</h2>
+        <p className="text-muted-foreground text-sm leading-relaxed max-w-[260px] mx-auto mb-8">
+          <span className="text-foreground font-medium">{teamName}</span> existe,
+          pero aún no tiene partidos ni estadísticas registradas.
+        </p>
+
+        {/* CTAs */}
+        <div className="space-y-3">
+          <Link
+            href="/matches/new"
+            className="flex items-center justify-center gap-2 w-full bg-accent text-accent-foreground py-4 rounded-xl font-medium uppercase tracking-wider hover:bg-accent-hover active:scale-[0.98] transition-all"
+          >
+            <Plus className="h-4 w-4" />
+            Crear primer partido
+          </Link>
+          <Link
+            href="/team"
+            className="flex items-center justify-center gap-2 w-full bg-transparent border border-border text-foreground py-4 rounded-xl font-medium uppercase tracking-wider hover:border-accent/50 active:scale-[0.98] transition-all"
+          >
+            <UserPlus className="h-4 w-4 text-accent" />
+            Gestionar plantilla
+          </Link>
+        </div>
+      </div>
+
+      {/* Feature hints */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-card rounded-xl p-4 border border-border/40">
+          <Calendar className="h-5 w-5 text-accent mb-3" />
+          <p className="text-sm font-medium mb-1">Registra partidos</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Guarda resultados, goles y asistencias
+          </p>
+        </div>
+        <div className="bg-card rounded-xl p-4 border border-border/40">
+          <Users className="h-5 w-5 text-accent mb-3" />
+          <p className="text-sm font-medium mb-1">Gestiona jugadores</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Añade miembros y asigna posiciones
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Full Dashboard ───────────────────────────────────────────────────────────
+
+function Dashboard({
+  team,
+  stats,
+  winRate,
+  recentForm,
+  nextMatch,
+  recentMatches,
+  myNextMatchAttendance,
+}: {
+  team: Team
+  stats: TeamStats
+  winRate: number
+  recentForm: ("W" | "L" | "D")[]
+  nextMatch: Match | null
+  recentMatches: Match[]
+  myNextMatchAttendance: "confirmed" | "declined" | null
+}) {
+  return (
+    <div className="space-y-5">
+      {/* ── Win Rate Card ── */}
+      <div
+        className="rounded-2xl p-5"
+        style={{ backgroundColor: team.primary_color || "#D7FF00" }}
+      >
+        <div className="flex items-end justify-between">
+          <div>
+            <p
+              className="text-[11px] uppercase tracking-widest mb-1 opacity-60"
+              style={{ color: team.secondary_color || "#000" }}
+            >
+              Tasa de victoria
+            </p>
+            <p
+              className="font-display text-7xl leading-none"
+              style={{ color: team.secondary_color || "#000" }}
+            >
+              {winRate}
+              <span className="text-3xl">%</span>
+            </p>
+            <p
+              className="text-xs mt-2 opacity-50"
+              style={{ color: team.secondary_color || "#000" }}
+            >
+              {stats.matches_played} partidos · {stats.wins}G {stats.draws}E {stats.losses}P
+            </p>
+          </div>
+
+          {/* Recent form */}
+          <div className="flex flex-col items-end gap-1.5">
+            <p
+              className="text-[10px] uppercase tracking-widest opacity-50 mb-0.5"
+              style={{ color: team.secondary_color || "#000" }}
+            >
+              Forma
+            </p>
             <div className="flex gap-1">
-              {teamData.recentForm.map((result, i) => (
+              {recentForm.map((r, i) => (
                 <div
                   key={i}
-                  className={`w-6 h-8 rounded flex items-center justify-center text-xs font-bold ${
-                    result === "W" ? "bg-black text-accent" :
-                    result === "L" ? "bg-black/20 text-black" :
-                    "bg-black/40 text-black"
-                  }`}
+                  className="w-7 h-9 rounded flex items-center justify-center text-xs font-bold"
+                  style={{
+                    backgroundColor:
+                      r === "W"
+                        ? "rgba(0,0,0,0.85)"
+                        : r === "L"
+                        ? "rgba(0,0,0,0.25)"
+                        : "rgba(0,0,0,0.12)",
+                    color:
+                      r === "W"
+                        ? team.primary_color || "#D7FF00"
+                        : "rgba(0,0,0,0.5)",
+                  }}
                 >
-                  {result}
+                  {r}
                 </div>
               ))}
             </div>
           </div>
         </div>
-        
-        {/* Quick Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          {quickStats.map((stat) => (
-            <StatCard key={stat.label} {...stat} size="sm" />
-          ))}
+      </div>
+
+      {/* ── Quick Stats ── */}
+      <div className="grid grid-cols-3 gap-2">
+        <StatCard label="Partidos" value={stats.matches_played} size="sm" />
+        <StatCard label="Victorias" value={stats.wins} size="sm" />
+        <StatCard label="Goles" value={stats.goals_for} size="sm" />
+      </div>
+
+      {/* ── Next Match ── */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-display text-xl">Próximo partido</h2>
+          <Link
+            href="/matches/new"
+            className="text-accent text-xs uppercase tracking-wider flex items-center gap-1 hover:opacity-80"
+          >
+            <Plus className="h-3 w-3" />
+            Crear
+          </Link>
         </div>
-        
-        {/* Upcoming Match */}
-        <section className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-display text-xl">Próximo partido</h2>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+
+        {nextMatch ? (
+          <div className="bg-card rounded-xl p-4 border border-border/30">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                {typeLabel(nextMatch.type)}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {formatDate(nextMatch.match_date)}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-center gap-4 py-2">
+              <span className="text-sm font-semibold flex-1 text-right">
+                {team.name}
+              </span>
+              <span className="text-xs text-muted-foreground uppercase tracking-widest px-3 py-1 bg-muted rounded">
+                vs
+              </span>
+              <span className="text-sm font-semibold flex-1">
+                {nextMatch.opponent_name}
+              </span>
+            </div>
+
+            {nextMatch.venue_custom && (
+              <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-border/50">
+                <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">
+                  {nextMatch.venue_custom}
+                </span>
+              </div>
+            )}
+
+            <AttendanceWidget
+              matchId={nextMatch.id}
+              currentStatus={myNextMatchAttendance}
+              compact
+            />
           </div>
-          <MatchCard {...upcomingMatch} />
-        </section>
-        
-        {/* Recent Matches */}
-        <section className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-display text-xl">Últimos resultados</h2>
-            <Link href="/matches" className="text-accent text-xs uppercase tracking-wider flex items-center gap-1">
-              Ver todos <ChevronRight className="h-3 w-3" />
-            </Link>
+        ) : (
+          <div className="bg-card rounded-xl p-4 flex items-center gap-3 border border-dashed border-border">
+            <Calendar className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+            <div>
+              <p className="text-sm text-muted-foreground">
+                No hay próximos partidos
+              </p>
+              <Link
+                href="/matches/new"
+                className="text-accent text-xs hover:underline"
+              >
+                Registrar partido →
+              </Link>
+            </div>
           </div>
+        )}
+      </section>
+
+      {/* ── Recent Results ── */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-display text-xl">Últimos resultados</h2>
+          <Link
+            href="/matches"
+            className="text-accent text-xs uppercase tracking-wider flex items-center gap-1 hover:opacity-80"
+          >
+            Ver todos
+            <ChevronRight className="h-3 w-3" />
+          </Link>
+        </div>
+
+        {recentMatches.length > 0 ? (
           <div className="space-y-2">
-            {recentMatches.map((match) => (
-              <MatchCard key={match.id} {...match} />
+            {recentMatches.map((m) => (
+              <MatchCard
+                key={m.id}
+                id={m.id}
+                homeTeam={team.name}
+                awayTeam={m.opponent_name}
+                homeScore={m.goals_for ?? undefined}
+                awayScore={m.goals_against ?? undefined}
+                date={formatDate(m.match_date)}
+                competition={typeLabel(m.type)}
+                result={matchResult(m)}
+              />
             ))}
           </div>
-        </section>
-        
-        {/* Quick Actions */}
-        <section>
-          <h2 className="font-display text-xl mb-3">Acciones rápidas</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <Link 
-              href="/team"
-              className="bg-card rounded-lg p-4 flex flex-col gap-2 active:scale-[0.98] transition-transform"
-            >
-              <Users className="h-5 w-5 text-accent" />
-              <span className="text-sm font-medium">Ver plantilla</span>
-            </Link>
-            <Link 
-              href="/matches/new"
-              className="bg-card rounded-lg p-4 flex flex-col gap-2 active:scale-[0.98] transition-transform"
-            >
-              <Calendar className="h-5 w-5 text-accent" />
-              <span className="text-sm font-medium">Registrar partido</span>
-            </Link>
+        ) : (
+          <div className="bg-card rounded-xl p-5 text-center border border-border/30">
+            <p className="text-sm text-muted-foreground">Sin partidos jugados</p>
           </div>
-        </section>
-      </div>
-    </AppShell>
+        )}
+      </section>
+
+      {/* ── Quick Actions ── */}
+      <section>
+        <h2 className="font-display text-xl mb-3">Acciones rápidas</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <Link
+            href="/team"
+            className="bg-card rounded-xl p-4 flex flex-col gap-2.5 active:scale-[0.97] transition-transform border border-border/40 hover:border-border"
+          >
+            <Users className="h-5 w-5 text-accent" />
+            <span className="text-sm font-medium">Ver plantilla</span>
+          </Link>
+          <Link
+            href="/matches/new"
+            className="bg-card rounded-xl p-4 flex flex-col gap-2.5 active:scale-[0.97] transition-transform border border-border/40 hover:border-border"
+          >
+            <Calendar className="h-5 w-5 text-accent" />
+            <span className="text-sm font-medium">Registrar partido</span>
+          </Link>
+        </div>
+      </section>
+    </div>
   )
 }
