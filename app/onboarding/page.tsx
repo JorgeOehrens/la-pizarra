@@ -18,7 +18,7 @@ export default async function OnboardingPage() {
     .limit(1)
     .maybeSingle()
 
-  if (membership?.team_id) redirect("/home")
+  if (membership?.team_id) redirect("/team-select")
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

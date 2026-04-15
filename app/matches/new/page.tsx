@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
+import { getActiveTeamMembership } from "@/lib/team"
 import { NewMatchForm } from "./new-match-form"
 
 export default async function NewMatchPage() {
@@ -8,18 +9,11 @@ export default async function NewMatchPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/auth/login")
 
-  const { data: membership } = await supabase
-    .from("team_members")
-    .select("team_id, role, teams(id, name)")
-    .eq("user_id", user.id)
-    .eq("status", "active")
-    .limit(1)
-    .maybeSingle()
-
-  if (!membership?.teams) redirect("/onboarding")
+  const membership = await getActiveTeamMembership(supabase, user.id)
+  if (!membership) redirect("/team-select")
   if (membership.role !== "admin") redirect("/matches")
 
-  const team = membership.teams as unknown as { id: string; name: string }
+  const team = membership.teams
 
   // Only non-guest members with real user accounts can be scorers/assisters
   const { data: members } = await supabase

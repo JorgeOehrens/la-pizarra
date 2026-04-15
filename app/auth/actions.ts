@@ -48,11 +48,32 @@ export async function signup(formData: FormData) {
 export async function login(formData: FormData) {
   const supabase = await createClient()
 
-  const username = (formData.get('username') as string).toLowerCase().trim()
+  // 'identifier' accepts either a username or a real email
+  const input = (formData.get('identifier') as string).toLowerCase().trim()
   const password = formData.get('password') as string
   const redirectTo = (formData.get('redirectTo') as string | null)?.trim() || null
 
-  const internalEmail = `${username}@lapizarra.app`
+  let internalEmail: string
+
+  if (input.endsWith('@lapizarra.app')) {
+    // Already in internal format
+    internalEmail = input
+  } else if (input.includes('@')) {
+    // Real email → look up the profile to get the username
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('email', input)
+      .maybeSingle()
+
+    if (!profile?.username) {
+      return { error: 'Usuario o contraseña incorrectos' }
+    }
+    internalEmail = `${profile.username}@lapizarra.app`
+  } else {
+    // Plain username
+    internalEmail = `${input}@lapizarra.app`
+  }
 
   const { error } = await supabase.auth.signInWithPassword({
     email: internalEmail,

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { AppShell } from "@/components/app-shell"
 import { StatCard } from "@/components/stat-card"
+import { getActiveTeamMembership } from "@/lib/team"
 import { ChevronLeft, Edit } from "lucide-react"
 import Link from "next/link"
 import { format } from "date-fns"
@@ -25,16 +26,8 @@ export default async function PlayerDetailPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/auth/login")
 
-  // Current user's team membership
-  const { data: membership } = await supabase
-    .from("team_members")
-    .select("team_id, role")
-    .eq("user_id", user.id)
-    .eq("status", "active")
-    .limit(1)
-    .maybeSingle()
-
-  if (!membership?.team_id) redirect("/onboarding")
+  const membership = await getActiveTeamMembership(supabase, user.id)
+  if (!membership) redirect("/team-select")
 
   const teamId = membership.team_id
   const isAdmin = membership.role === "admin"
@@ -52,7 +45,7 @@ export default async function PlayerDetailPage({
 
     supabase
       .from("player_stats")
-      .select("goals, assists, matches_played")
+      .select("goals, assists, matches_played, yellow_cards, red_cards")
       .eq("player_id", playerId)
       .eq("team_id", teamId)
       .maybeSingle(),
@@ -80,6 +73,8 @@ export default async function PlayerDetailPage({
     goals: Number(statsResult.data?.goals ?? 0),
     assists: Number(statsResult.data?.assists ?? 0),
     matches_played: Number(statsResult.data?.matches_played ?? 0),
+    yellow_cards: Number(statsResult.data?.yellow_cards ?? 0),
+    red_cards: Number(statsResult.data?.red_cards ?? 0),
   }
 
   type EventRow = {
@@ -99,8 +94,9 @@ export default async function PlayerDetailPage({
     }
   })
 
-  const yellowCards = allEvents.filter((e) => e.event_type === "yellow_card").length
-  const redCards = allEvents.filter((e) => e.event_type === "red_card").length
+  // Use stats from the view (correctly filtered by status='finished')
+  const yellowCards = stats.yellow_cards
+  const redCards = stats.red_cards
   const activityFeed = allEvents.filter(
     (e) => e.event_type === "goal" || e.event_type === "assist"
   )
@@ -111,7 +107,7 @@ export default async function PlayerDetailPage({
     <AppShell showNav={false}>
       {/* Sticky header */}
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm">
-        <div className="flex items-center justify-between px-4 py-4">
+        <div className="flex items-center justify-between px-4 py-4 max-w-lg mx-auto">
           <Link href="/team" className="p-2 -ml-2 rounded-lg hover:bg-card">
             <ChevronLeft className="h-5 w-5" />
           </Link>
@@ -129,7 +125,7 @@ export default async function PlayerDetailPage({
         </div>
       </div>
 
-      <div className="px-4 pb-8">
+      <div className="px-4 pb-8 max-w-lg mx-auto">
         {/* Player hero */}
         <div className="relative mb-6">
           <div className="aspect-[4/3] bg-gradient-to-b from-muted to-card rounded-xl flex items-center justify-center overflow-hidden">

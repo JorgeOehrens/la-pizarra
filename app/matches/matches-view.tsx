@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
 import { MatchCard } from "@/components/match-card"
+import { AttendanceWidget } from "@/components/attendance-widget"
 import { Plus } from "lucide-react"
 import Link from "next/link"
-import { cn } from "@/lib/utils"
+import { getMatchDerivedStatus } from "@/lib/match-utils"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -18,11 +18,11 @@ type Match = {
   goals_against: number | null
 }
 
-type Filter = "Todos" | "Victorias" | "Empates" | "Derrotas" | "Próximos"
-const FILTERS: Filter[] = ["Todos", "Victorias", "Empates", "Derrotas", "Próximos"]
-
-function getResult(m: Match): "win" | "loss" | "draw" | "upcoming" {
-  if (m.status === "scheduled" || m.status === "in_progress") return "upcoming"
+function getResult(m: Match): "win" | "loss" | "draw" | "upcoming" | "pending" {
+  const derived = getMatchDerivedStatus(m.status, m.match_date)
+  if (derived === "upcoming") return "upcoming"
+  if (derived === "pending_result") return "pending"
+  if (derived === "cancelled") return "draw"
   if (m.goals_for === null || m.goals_against === null) return "draw"
   if (m.goals_for > m.goals_against) return "win"
   if (m.goals_for < m.goals_against) return "loss"
@@ -48,34 +48,43 @@ export function MatchesView({
   matches,
   teamName,
   isAdmin,
+  attendanceMap = {},
 }: {
   matches: Match[]
   teamName: string
   isAdmin: boolean
+  attendanceMap?: Record<string, "confirmed" | "declined" | null>
 }) {
-  const [activeFilter, setActiveFilter] = useState<Filter>("Todos")
+  const now = new Date()
 
-  const finished = matches.filter((m) => m.status === "finished")
+  const upcoming = matches.filter(
+    (m) => m.status === "scheduled" && new Date(m.match_date) > now
+  ).sort((a, b) => new Date(a.match_date).getTime() - new Date(b.match_date).getTime())
+
+  const pending = matches.filter(
+    (m) => m.status === "scheduled" && new Date(m.match_date) <= now
+  ).sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime())
+
+  const history = matches.filter((m) => m.status === "finished")
+    .sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime())
+
+  const finished = history
   const wins = finished.filter((m) => (m.goals_for ?? 0) > (m.goals_against ?? 0)).length
   const draws = finished.filter((m) => m.goals_for === m.goals_against && m.goals_for !== null).length
   const losses = finished.filter((m) => (m.goals_for ?? 0) < (m.goals_against ?? 0)).length
 
-  const filtered = matches.filter((m) => {
-    const r = getResult(m)
-    if (activeFilter === "Todos") return true
-    if (activeFilter === "Victorias") return r === "win"
-    if (activeFilter === "Empates") return r === "draw"
-    if (activeFilter === "Derrotas") return r === "loss"
-    if (activeFilter === "Próximos") return r === "upcoming"
-    return true
-  })
+  const totalMatches = matches.filter(
+    (m) => m.status !== "cancelled" && m.status !== "postponed"
+  ).length
 
   return (
-    <div className="px-4 pt-6 pb-4">
+    <div className="px-4 pt-6 pb-4 max-w-lg mx-auto">
       {/* Header */}
       <header className="flex items-center justify-between mb-6">
         <div>
-          <p className="label-text mb-1 text-muted-foreground">Historial</p>
+          <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-1">
+            Historial
+          </p>
           <h1 className="font-display text-3xl">Partidos</h1>
         </div>
         {isAdmin && (
@@ -89,7 +98,7 @@ export function MatchesView({
       </header>
 
       {/* Stats Bar */}
-      <div className="grid grid-cols-4 gap-2 mb-5">
+      <div className="grid grid-cols-4 gap-2 mb-6">
         <div className="bg-card rounded-xl p-3 text-center">
           <p className="font-display text-2xl">{finished.length}</p>
           <p className="text-[10px] text-muted-foreground uppercase mt-0.5">Jugados</p>
@@ -108,49 +117,94 @@ export function MatchesView({
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-4 -mx-4 px-4 mb-1">
-        {FILTERS.map((f) => (
-          <button
-            key={f}
-            onClick={() => setActiveFilter(f)}
-            className={cn(
-              "px-4 py-2 rounded-lg text-xs uppercase tracking-wider whitespace-nowrap transition-colors flex-shrink-0",
-              activeFilter === f
-                ? "bg-accent text-accent-foreground"
-                : "bg-card text-muted-foreground"
-            )}
-          >
-            {f}
-          </button>
-        ))}
-      </div>
+      {/* ── Próximos ── */}
+      {upcoming.length > 0 && (
+        <section className="mb-6">
+          <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground mb-3">
+            Próximos
+          </h2>
+          <div className="space-y-2">
+            {upcoming.map((m) => (
+              <MatchCard
+                key={m.id}
+                id={m.id}
+                homeTeam={teamName}
+                awayTeam={m.opponent_name}
+                date={formatDate(m.match_date)}
+                competition={typeLabel[m.type] ?? m.type}
+                result="upcoming"
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
-      {/* Matches List */}
-      {filtered.length > 0 ? (
-        <div className="space-y-2">
-          {filtered.map((m) => (
-            <MatchCard
-              key={m.id}
-              id={m.id}
-              homeTeam={teamName}
-              awayTeam={m.opponent_name}
-              homeScore={m.goals_for ?? undefined}
-              awayScore={m.goals_against ?? undefined}
-              date={formatDate(m.match_date)}
-              competition={typeLabel[m.type] ?? m.type}
-              result={getResult(m)}
-            />
-          ))}
-        </div>
-      ) : (
+      {/* ── Pendientes de resultado ── */}
+      {pending.length > 0 && (
+        <section className="mb-6">
+          <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground mb-3">
+            Pendientes de resultado
+          </h2>
+          <div className="space-y-2">
+            {pending.map((m) => (
+              <MatchCard
+                key={m.id}
+                id={m.id}
+                homeTeam={teamName}
+                awayTeam={m.opponent_name}
+                date={formatDate(m.match_date)}
+                competition={typeLabel[m.type] ?? m.type}
+                result="pending"
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── Historial ── */}
+      {history.length > 0 && (
+        <section className="mb-6">
+          <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground mb-3">
+            Historial
+          </h2>
+          <div className="space-y-2">
+            {history.map((m) => {
+              const att = attendanceMap[m.id] ?? null
+              return (
+                <div key={m.id}>
+                  <MatchCard
+                    id={m.id}
+                    homeTeam={teamName}
+                    awayTeam={m.opponent_name}
+                    homeScore={m.goals_for ?? undefined}
+                    awayScore={m.goals_against ?? undefined}
+                    date={formatDate(m.match_date)}
+                    competition={typeLabel[m.type] ?? m.type}
+                    result={getResult(m)}
+                    className={att === null ? "rounded-b-none" : ""}
+                  />
+                  {att === null && (
+                    <div className="bg-card rounded-b-lg border-x border-b border-border/30 px-4 pb-3">
+                      <AttendanceWidget
+                        matchId={m.id}
+                        currentStatus={null}
+                        compact
+                        matchStatus="finished"
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Empty state */}
+      {totalMatches === 0 && (
         <div className="text-center py-16">
-          <p className="text-muted-foreground text-sm mb-2">
-            {activeFilter === "Todos"
-              ? "No hay partidos registrados"
-              : `No hay partidos con filtro "${activeFilter}"`}
-          </p>
-          {activeFilter === "Todos" && (
+          <p className="text-muted-foreground text-sm mb-2">No hay partidos registrados</p>
+          {isAdmin && (
             <Link href="/matches/new" className="text-accent text-sm hover:underline">
               Registrar primer partido →
             </Link>

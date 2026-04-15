@@ -7,7 +7,15 @@ import {
 } from "@/components/ui/sheet"
 import { Check, ChevronLeft, Minus, Plus, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { Player, GoalEvent } from "@/app/matches/new/new-match-form"
+import type { Player } from "@/components/add-event-sheet"
+
+interface GoalEvent {
+  id: string
+  type: "goal" | "own_goal"
+  player?: Player
+  assist?: Player
+  minute?: number
+}
 
 interface AddGoalSheetProps {
   open: boolean

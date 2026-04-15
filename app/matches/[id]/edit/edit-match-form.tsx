@@ -10,18 +10,23 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { createMatch } from "./actions"
-
-// Re-export Player so it can be imported from here
-export type { Player }
+import { saveMatch } from "./actions"
 
 type MatchType = "friendly" | "league" | "cup" | "tournament"
+type MatchStatus = "scheduled" | "finished" | "cancelled" | "postponed"
 
 const MATCH_TYPES: { value: MatchType; label: string }[] = [
   { value: "league", label: "Liga" },
   { value: "cup", label: "Copa" },
   { value: "friendly", label: "Amistoso" },
   { value: "tournament", label: "Torneo" },
+]
+
+const STATUS_OPTIONS: { value: MatchStatus; label: string; color: string }[] = [
+  { value: "scheduled", label: "Programado", color: "bg-background text-muted-foreground border-border/30" },
+  { value: "finished", label: "Finalizado", color: "" },
+  { value: "cancelled", label: "Cancelado", color: "bg-background text-muted-foreground border-border/30" },
+  { value: "postponed", label: "Postergado", color: "bg-background text-muted-foreground border-border/30" },
 ]
 
 function eventIcon(event: MatchEvent): string {
@@ -49,58 +54,69 @@ function eventSub(event: MatchEvent): string {
   const parts: string[] = []
   if (event.kind === "goal" && event.assistPlayerName) {
     parts.push(`Asistencia: ${event.assistPlayerName}`)
-  } else if (event.kind === "goal") {
+  } else if (event.kind === "goal" && event.side === "mine") {
     parts.push("Sin asistencia")
   }
   if (event.minute != null) parts.push(`${event.minute}'`)
   return parts.join(" · ")
 }
 
-// Count my team goals from events
 function countGoalsFor(events: MatchEvent[]): number {
   return events.filter(
     (e) => (e.side === "mine" && e.kind === "goal") || e.kind === "own_goal"
   ).length
 }
 
-// Count rival goals from events
 function countGoalsAgainst(events: MatchEvent[]): number {
   return events.filter((e) => e.side === "rival" && e.kind === "goal").length
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function NewMatchForm({
-  teamId,
-  teamName,
+export function EditMatchForm({
+  matchId,
+  initialData,
+  initialEvents,
   players,
+  teamName,
 }: {
-  teamId: string
-  teamName: string
+  matchId: string
+  initialData: {
+    opponentName: string
+    isHome: boolean
+    matchType: MatchType
+    competitionName: string
+    matchDate: string
+    matchTime: string
+    venueCustom: string
+    status: MatchStatus
+    notes: string
+  }
+  initialEvents: MatchEvent[]
   players: Player[]
+  teamName: string
 }) {
   const router = useRouter()
 
-  const [rivalTeam, setRivalTeam] = useState("")
-  const [isHome, setIsHome] = useState(true)
-  const [matchType, setMatchType] = useState<MatchType>("league")
-  const [competitionName, setCompetitionName] = useState("")
-  const [matchDate, setMatchDate] = useState(new Date().toISOString().split("T")[0])
-  const [matchTime, setMatchTime] = useState("10:00")
-  const [venueCustom, setVenueCustom] = useState("")
-  const [events, setEvents] = useState<MatchEvent[]>([])
+  const [opponentName, setOpponentName] = useState(initialData.opponentName)
+  const [isHome, setIsHome] = useState(initialData.isHome)
+  const [matchType, setMatchType] = useState<MatchType>(initialData.matchType)
+  const [competitionName, setCompetitionName] = useState(initialData.competitionName)
+  const [matchDate, setMatchDate] = useState(initialData.matchDate)
+  const [matchTime, setMatchTime] = useState(initialData.matchTime)
+  const [venueCustom, setVenueCustom] = useState(initialData.venueCustom)
+  const [status, setStatus] = useState<MatchStatus>(initialData.status)
+  const [notes, setNotes] = useState(initialData.notes)
+  const [events, setEvents] = useState<MatchEvent[]>(initialEvents)
   const [addEventOpen, setAddEventOpen] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [isSaving, startSave] = useTransition()
 
-  const teamScore = countGoalsFor(events)
-  const rivalScore = countGoalsAgainst(events)
-
-  const leftScore = isHome ? teamScore : rivalScore
-  const rightScore = isHome ? rivalScore : teamScore
-  const leftLabel = isHome ? teamName : (rivalTeam || "Rival")
-  const rightLabel = isHome ? (rivalTeam || "Rival") : teamName
+  const goalsFor = countGoalsFor(events)
+  const goalsAgainst = countGoalsAgainst(events)
+  const leftScore = isHome ? goalsFor : goalsAgainst
+  const rightScore = isHome ? goalsAgainst : goalsFor
 
   function handleAddEvent(event: MatchEvent) {
     setEvents((prev) => [...prev, event])
@@ -113,50 +129,36 @@ export function NewMatchForm({
 
   function handleSave() {
     setFormError(null)
-
-    if (!rivalTeam.trim()) {
+    if (!opponentName.trim()) {
       setFormError("El nombre del rival es obligatorio.")
-      return
-    }
-    if (!matchDate) {
-      setFormError("La fecha es obligatoria.")
       return
     }
 
     startSave(async () => {
-      type EventOut = {
-        event_type: string
-        player_id: string | null
-        assisted_by: string | null
-        minute: number | null
-      }
-
-      const eventsPayload: EventOut[] = events.map((e): EventOut => {
-        const resolvedType =
+      const eventsPayload = events.map((e) => ({
+        event_type:
           e.side === "rival"
             ? e.kind === "goal" ? "opponent_goal" : e.kind
-            : e.kind
+            : e.kind,
+        player_id: e.playerId ?? null,
+        assisted_by:
+          e.side === "mine" && e.kind === "goal"
+            ? (e.assistPlayerId ?? null)
+            : null,
+        minute: e.minute ?? null,
+      }))
 
-        return {
-          event_type: resolvedType,
-          player_id: e.playerId ?? null,
-          assisted_by:
-            e.side === "mine" && e.kind === "goal"
-              ? (e.assistPlayerId ?? null)
-              : null,
-          minute: e.minute ?? null,
-        }
-      })
-
-      const result = await createMatch({
-        teamId,
-        opponentName: rivalTeam.trim(),
+      const result = await saveMatch({
+        matchId,
+        opponentName: opponentName.trim(),
         isHome,
         matchType,
         competitionName,
         matchDate,
         matchTime,
         venueCustom,
+        status,
+        notes,
         events: eventsPayload,
       })
 
@@ -165,7 +167,7 @@ export function NewMatchForm({
         return
       }
 
-      router.push("/matches")
+      router.push(`/matches/${matchId}`)
     })
   }
 
@@ -174,19 +176,21 @@ export function NewMatchForm({
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background">
         <div className="flex items-center justify-between px-4 py-4">
-          <Link href="/matches" className="p-2 -ml-2 rounded-lg hover:bg-card">
+          <Link
+            href={`/matches/${matchId}`}
+            className="p-2 -ml-2 rounded-lg hover:bg-card"
+          >
             <ChevronLeft className="h-5 w-5" />
           </Link>
-          <h1 className="font-display text-xl">Nuevo partido</h1>
+          <h1 className="font-display text-xl">Editar partido</h1>
           <div className="w-9" />
         </div>
       </div>
 
       <div className="px-4 pb-36">
-        {/* ── Score Card ───────────────────────────────── */}
+        {/* ── Score preview ─────────────────────────────── */}
         <div className="bg-card rounded-2xl p-6 mb-6">
           <div className="flex items-center justify-between gap-2">
-            {/* Left side */}
             <div className="flex-1 flex flex-col items-center gap-2">
               <div className={cn(
                 "w-14 h-14 rounded-xl flex items-center justify-center",
@@ -196,22 +200,20 @@ export function NewMatchForm({
                   "font-display text-2xl",
                   isHome ? "text-accent-foreground" : "text-muted-foreground"
                 )}>
-                  {isHome ? "TU" : (rivalTeam.charAt(0).toUpperCase() || "?")}
+                  {isHome ? "TU" : (opponentName.charAt(0).toUpperCase() || "?")}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground truncate max-w-[80px] text-center leading-tight">
-                {leftLabel}
+                {isHome ? teamName : (opponentName || "Rival")}
               </p>
             </div>
 
-            {/* Score */}
             <div className="flex items-center gap-3 px-2">
               <span className="font-display text-5xl tabular-nums">{leftScore}</span>
               <span className="text-2xl text-muted-foreground">–</span>
               <span className="font-display text-5xl tabular-nums">{rightScore}</span>
             </div>
 
-            {/* Right side */}
             <div className="flex-1 flex flex-col items-center gap-2">
               <div className={cn(
                 "w-14 h-14 rounded-xl flex items-center justify-center",
@@ -221,17 +223,42 @@ export function NewMatchForm({
                   "font-display text-2xl",
                   !isHome ? "text-accent-foreground" : "text-muted-foreground"
                 )}>
-                  {!isHome ? "TU" : (rivalTeam.charAt(0).toUpperCase() || "?")}
+                  {!isHome ? "TU" : (opponentName.charAt(0).toUpperCase() || "?")}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground truncate max-w-[80px] text-center leading-tight">
-                {rightLabel}
+                {!isHome ? teamName : (opponentName || "Rival")}
               </p>
             </div>
           </div>
 
-          {/* Local / Visitante toggle */}
-          <div className="flex justify-center mt-5">
+          <p className="text-center text-xs text-muted-foreground mt-4 opacity-60">
+            Marcador derivado de los eventos
+          </p>
+        </div>
+
+        {/* ── Match info ────────────────────────────────── */}
+        <section className="mb-6">
+          <h2 className="text-xs uppercase tracking-widest text-muted-foreground mb-3">
+            Información del partido
+          </h2>
+
+          {/* Rival */}
+          <div className="bg-card rounded-xl p-4 mb-3">
+            <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+              Equipo rival
+            </label>
+            <input
+              type="text"
+              placeholder="Nombre del equipo"
+              value={opponentName}
+              onChange={(e) => setOpponentName(e.target.value)}
+              className="w-full bg-transparent text-xl font-display placeholder:text-muted-foreground/40 focus:outline-none"
+            />
+          </div>
+
+          {/* Home/Away */}
+          <div className="flex justify-center mb-3">
             <div className="bg-background rounded-xl p-1 flex">
               <button
                 onClick={() => setIsHome(true)}
@@ -254,28 +281,7 @@ export function NewMatchForm({
             </div>
           </div>
 
-          <p className="text-center text-xs text-muted-foreground mt-4 opacity-60">
-            El marcador se calcula automáticamente de los eventos
-          </p>
-        </div>
-
-        {/* ── Details ──────────────────────────────────── */}
-        <section className="mb-6">
-          <h2 className="text-xs uppercase tracking-widest text-muted-foreground mb-3">Detalles</h2>
-
-          <div className="bg-card rounded-xl p-4 mb-3">
-            <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-              Equipo rival
-            </label>
-            <input
-              type="text"
-              placeholder="Nombre del equipo"
-              value={rivalTeam}
-              onChange={(e) => setRivalTeam(e.target.value)}
-              className="w-full bg-transparent text-xl font-display placeholder:text-muted-foreground/40 focus:outline-none"
-            />
-          </div>
-
+          {/* Match type */}
           <div className="bg-card rounded-xl p-4 mb-3">
             <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-3">
               Tipo de partido
@@ -307,6 +313,7 @@ export function NewMatchForm({
             )}
           </div>
 
+          {/* Date & Time */}
           <div className="flex gap-3 mb-3">
             <div className="flex-1 bg-card rounded-xl p-4">
               <label className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-2">
@@ -334,7 +341,8 @@ export function NewMatchForm({
             </div>
           </div>
 
-          <div className="bg-card rounded-xl p-4">
+          {/* Venue */}
+          <div className="bg-card rounded-xl p-4 mb-3">
             <label className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-2">
               <MapPin className="h-3 w-3" />
               Lugar (opcional)
@@ -346,6 +354,31 @@ export function NewMatchForm({
               onChange={(e) => setVenueCustom(e.target.value)}
               className="w-full bg-transparent text-sm placeholder:text-muted-foreground/40 focus:outline-none"
             />
+          </div>
+
+          {/* Status */}
+          <div className="bg-card rounded-xl p-4 mb-3">
+            <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-3">
+              Estado del partido
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {STATUS_OPTIONS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => setStatus(value)}
+                  className={cn(
+                    "py-3 rounded-xl text-sm font-display uppercase tracking-wider transition-colors border",
+                    status === value
+                      ? value === "finished"
+                        ? "bg-accent text-accent-foreground border-accent"
+                        : "bg-foreground text-background border-foreground"
+                      : "bg-background text-muted-foreground border-border/30"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -445,7 +478,7 @@ export function NewMatchForm({
           className="w-full bg-accent text-accent-foreground py-4 rounded-xl font-display text-xl uppercase tracking-wide flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-60"
         >
           {isSaving && <Loader2 className="h-5 w-5 animate-spin" />}
-          {isSaving ? "Guardando..." : "Guardar partido"}
+          {isSaving ? "Guardando..." : "Guardar cambios"}
         </button>
       </div>
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useState } from "react"
+import { Suspense, useState, useTransition } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { ChevronLeft, Eye, EyeOff } from "lucide-react"
@@ -10,32 +10,30 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirectTo") ?? ""
   const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setIsLoading(true)
     setError(null)
-
     const formData = new FormData(e.currentTarget)
-    const result = await login(formData)
-
-    if (result?.error) {
-      setError(result.error)
-      setIsLoading(false)
-    }
+    startTransition(async () => {
+      const result = await login(formData)
+      if (result?.error) {
+        setError(result.error)
+      }
+    })
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <input type="hidden" name="redirectTo" value={redirectTo} />
       <div>
-        <label className="label-text block mb-2">Usuario</label>
+        <label className="label-text block mb-2">Usuario o email</label>
         <input
-          name="username"
+          name="identifier"
           type="text"
-          placeholder="tu usuario"
+          placeholder="tu_usuario o tu@email.com"
           className="w-full bg-card border border-border rounded-lg px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
           required
           autoCapitalize="none"
@@ -69,10 +67,10 @@ function LoginForm() {
 
       <button
         type="submit"
-        disabled={isLoading}
+        disabled={isPending}
         className="w-full bg-accent text-accent-foreground py-4 rounded-lg font-medium uppercase tracking-wider transition-colors hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isLoading ? "Entrando..." : "Entrar"}
+        {isPending ? "Entrando..." : "Entrar"}
       </button>
     </form>
   )

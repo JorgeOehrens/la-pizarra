@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 
-type MatchResult = "win" | "loss" | "draw" | "upcoming"
+type MatchResult = "win" | "loss" | "draw" | "upcoming" | "pending"
 
 interface MatchCardProps {
   id: string
@@ -26,7 +26,7 @@ export function MatchCard({
   result = "upcoming",
   className,
 }: MatchCardProps) {
-  const isUpcoming = result === "upcoming"
+  const isUpcoming = result === "upcoming" || result === "pending"
   
   return (
     <Link 
@@ -59,7 +59,14 @@ export function MatchCard({
           !isUpcoming && "px-3 py-1 rounded bg-muted"
         )}>
           {isUpcoming ? (
-            <span className="text-xs text-muted-foreground uppercase">vs</span>
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="text-xs text-muted-foreground uppercase">vs</span>
+              {result === "pending" && (
+                <span className="text-[9px] uppercase tracking-widest text-yellow-400 bg-yellow-400/10 px-1.5 py-0.5 rounded">
+                  Pendiente
+                </span>
+              )}
+            </div>
           ) : (
             <>
               <span className="font-display text-2xl">{homeScore}</span>

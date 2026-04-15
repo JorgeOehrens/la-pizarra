@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { AppShell } from "@/components/app-shell"
+import { getActiveTeamMembership } from "@/lib/team"
 import { TeamView, type MemberWithStats } from "./team-view"
 
 export default async function TeamPage() {
@@ -9,20 +10,10 @@ export default async function TeamPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/auth/login")
 
-  // Active team
-  const { data: membership } = await supabase
-    .from("team_members")
-    .select("team_id, role, teams(id, name, logo_url, primary_color)")
-    .eq("user_id", user.id)
-    .eq("status", "active")
-    .limit(1)
-    .maybeSingle()
+  const membership = await getActiveTeamMembership(supabase, user.id)
+  if (!membership) redirect("/team-select")
 
-  if (!membership?.teams) redirect("/onboarding")
-
-  const team = membership.teams as unknown as {
-    id: string; name: string; logo_url: string | null; primary_color: string
-  }
+  const team = membership.teams
   const isAdmin = membership.role === "admin"
 
   // Fetch members + stats in parallel

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { AppShell } from "@/components/app-shell"
+import { getActiveTeamMembership } from "@/lib/team"
 import { ChevronRight, User, LogOut } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
@@ -25,26 +26,19 @@ export default async function ProfilePage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/auth/login")
 
-  // Parallel: profile + membership
-  const [profileRes, membershipRes] = await Promise.all([
+  // Parallel: profile + active membership
+  const [profileRes, membership] = await Promise.all([
     supabase
       .from("profiles")
       .select("username, display_name, avatar_url")
       .eq("id", user.id)
       .maybeSingle(),
 
-    supabase
-      .from("team_members")
-      .select("team_id, role, jersey_number, position, teams(name)")
-      .eq("user_id", user.id)
-      .eq("status", "active")
-      .limit(1)
-      .maybeSingle(),
+    getActiveTeamMembership(supabase, user.id),
   ])
 
   const profile = profileRes.data
-  const membership = membershipRes.data
-  const team = membership?.teams as unknown as { name: string } | null
+  const team = membership?.teams as { name: string } | null
 
   const displayName = profile?.display_name || profile?.username || "Jugador"
   const initials = getInitials(displayName)
@@ -96,7 +90,7 @@ export default async function ProfilePage() {
 
   return (
     <AppShell>
-      <div className="px-4 pt-6 pb-8">
+      <div className="px-4 pt-6 pb-8 max-w-lg mx-auto">
         <header className="mb-8">
           <h1 className="font-display text-3xl">Perfil</h1>
         </header>

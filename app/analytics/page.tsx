@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { AppShell } from "@/components/app-shell"
 import { StatCard } from "@/components/stat-card"
+import { getActiveTeamMembership } from "@/lib/team"
 import { AnalyticsChart } from "./analytics-chart"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -12,17 +13,10 @@ export default async function AnalyticsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/auth/login")
 
-  const { data: membership } = await supabase
-    .from("team_members")
-    .select("team_id, teams(id, name)")
-    .eq("user_id", user.id)
-    .eq("status", "active")
-    .limit(1)
-    .maybeSingle()
+  const membership = await getActiveTeamMembership(supabase, user.id)
+  if (!membership) redirect("/team-select")
 
-  if (!membership?.teams) redirect("/onboarding")
-
-  const team = membership.teams as { id: string; name: string }
+  const team = membership.teams
 
   // Fetch everything in parallel
   const [statsResult, playerStatsResult, membersResult, matchesResult] =
@@ -66,7 +60,7 @@ export default async function AnalyticsPage() {
   // Build name lookup from members
   const nameMap = new Map(
     (membersResult.data ?? []).map((m) => {
-      const p = m.profiles as { username: string; display_name: string | null } | null
+      const p = m.profiles as unknown as { username: string; display_name: string | null } | null
       return [m.user_id, p?.display_name || p?.username || "Jugador"]
     })
   )

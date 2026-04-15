@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { AppShell } from "@/components/app-shell"
-import { ChevronLeft, Clock, MapPin, Trophy } from "lucide-react"
+import { ChevronLeft, Clock, MapPin, Trophy, Pencil } from "lucide-react"
 import { AttendanceWidget } from "@/components/attendance-widget"
 import { MatchAttendeesPanel, type AttendeeInfo } from "@/components/match-attendees-panel"
+import { getActiveTeamMembership } from "@/lib/team"
+import { getMatchDerivedStatus } from "@/lib/match-utils"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
@@ -35,19 +37,12 @@ export default async function MatchDetailPage({
   if (!user) redirect("/auth/login")
 
   // Current user's active team
-  const { data: membership } = await supabase
-    .from("team_members")
-    .select("team_id, role, teams(id, name)")
-    .eq("user_id", user.id)
-    .eq("status", "active")
-    .limit(1)
-    .maybeSingle()
-
-  if (!membership?.teams) redirect("/onboarding")
+  const membership = await getActiveTeamMembership(supabase, user.id)
+  if (!membership) redirect("/team-select")
 
   const teamId = membership.team_id
   const isAdmin = membership.role === "admin"
-  const team = membership.teams as unknown as { id: string; name: string }
+  const team = membership.teams as { id: string; name: string }
 
   // Parallel fetch: match + events + team members + attendance
   const [matchRes, eventsRes, membersRes, attendanceRes] = await Promise.all([
@@ -60,7 +55,7 @@ export default async function MatchDetailPage({
 
     supabase
       .from("match_events")
-      .select("id, event_type, minute, player_id, related_event_id, profiles!match_events_player_id_fkey(display_name, username)")
+      .select("id, event_type, minute, player_id, assisted_by, profiles!match_events_player_id_fkey(display_name, username)")
       .eq("match_id", matchId)
       .order("minute", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: true }),
@@ -110,36 +105,34 @@ export default async function MatchDetailPage({
     return fallbackProfile?.display_name || fallbackProfile?.username || "Jugador"
   }
 
-  // ── Build assist map: goalEventId → assist info ───────────────────────────
+  // ── Build display events ──────────────────────────────────────────────────
   type AssistInfo = { name: string; number: number | null }
-  const assistMap = new Map<string, AssistInfo>()
-
-  for (const ev of rawEvents) {
-    if (ev.event_type !== "assist" || !ev.related_event_id) continue
-    const profile = ev.profiles as unknown as { display_name: string | null; username: string } | null
-    const name = playerName(ev.player_id, profile) ?? "Jugador"
-    const number = ev.player_id ? (memberMap.get(ev.player_id)?.number ?? null) : null
-    assistMap.set(ev.related_event_id, { name, number })
-  }
-
-  // ── Build display events (exclude raw assist rows) ────────────────────────
   type DisplayEvent = {
     id: string
-    type: "goal" | "own_goal" | "yellow_card" | "red_card"
+    type: "goal" | "own_goal" | "opponent_goal" | "yellow_card" | "red_card"
     minute: number | null
     playerName: string | null
     playerNumber: number | null
     assist: AssistInfo | null
+    isOpponent: boolean
   }
 
   const displayEvents: DisplayEvent[] = []
   for (const ev of rawEvents) {
-    if (ev.event_type === "assist") continue
-    if (!["goal", "own_goal", "yellow_card", "red_card"].includes(ev.event_type)) continue
+    if (!["goal", "own_goal", "opponent_goal", "yellow_card", "red_card"].includes(ev.event_type)) continue
 
     const profile = ev.profiles as unknown as { display_name: string | null; username: string } | null
-    const pName = playerName(ev.player_id, profile)
+    const pName = ev.player_id ? playerName(ev.player_id, profile) : null
     const pNumber = ev.player_id ? (memberMap.get(ev.player_id)?.number ?? null) : null
+    const isOpponent = !ev.player_id || ev.event_type === "opponent_goal"
+
+    const assistedById = (ev as { assisted_by?: string | null }).assisted_by ?? null
+    const assistInfo: AssistInfo | null = assistedById
+      ? {
+          name: memberMap.get(assistedById)?.name ?? "Jugador",
+          number: memberMap.get(assistedById)?.number ?? null,
+        }
+      : null
 
     displayEvents.push({
       id: ev.id,
@@ -147,7 +140,8 @@ export default async function MatchDetailPage({
       minute: ev.minute ?? null,
       playerName: pName,
       playerNumber: pNumber,
-      assist: assistMap.get(ev.id) ?? null,
+      assist: assistInfo,
+      isOpponent,
     })
   }
 
@@ -164,6 +158,11 @@ export default async function MatchDetailPage({
         status: attendanceMap.get(m.user_id!) ?? null,
       }
     })
+
+  // ── Derived status ───────────────────────────────────────────────────────
+  const derivedStatus = getMatchDerivedStatus(match.status, match.match_date)
+  const isUpcoming = derivedStatus === 'upcoming'
+  const isPendingResult = derivedStatus === 'pending_result'
 
   // ── Result ────────────────────────────────────────────────────────────────
   const gf = match.goals_for ?? null
@@ -193,16 +192,25 @@ export default async function MatchDetailPage({
     <AppShell showNav={false}>
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-sm">
-        <div className="flex items-center justify-between px-4 py-4">
+        <div className="flex items-center justify-between px-4 py-4 max-w-lg mx-auto">
           <Link href="/matches" className="p-2 -ml-2 rounded-lg hover:bg-card">
             <ChevronLeft className="h-5 w-5" />
           </Link>
           <h1 className="font-display text-lg truncate px-2">{competitionLabel}</h1>
-          <div className="w-9" />
+          {isAdmin && match.status !== "cancelled" && match.status !== "postponed" ? (
+            <Link
+              href={`/matches/${matchId}/edit`}
+              className="p-2 -mr-2 rounded-lg hover:bg-card text-muted-foreground"
+            >
+              <Pencil className="h-4 w-4" />
+            </Link>
+          ) : (
+            <div className="w-9" />
+          )}
         </div>
       </div>
 
-      <div className="px-4 pb-10">
+      <div className="px-4 pb-10 max-w-lg mx-auto">
         {/* ── Score card ───────────────────────────────────── */}
         <div className="bg-card rounded-2xl p-6 mb-4">
           <p className="text-center text-xs text-muted-foreground mb-5 capitalize">{dateLabel}</p>
@@ -228,17 +236,26 @@ export default async function MatchDetailPage({
 
             {/* Score */}
             <div className="flex flex-col items-center gap-1 px-2">
-              <div className="flex items-center gap-3">
-                <span className="font-display text-5xl tabular-nums">
-                  {leftScore ?? "–"}
-                </span>
-                <span className="text-2xl text-muted-foreground">–</span>
-                <span className="font-display text-5xl tabular-nums">
-                  {rightScore ?? "–"}
-                </span>
-              </div>
+              {isUpcoming ? (
+                <div className="flex items-center gap-3 py-1">
+                  <span className="font-display text-3xl text-muted-foreground/40">vs</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <span className="font-display text-5xl tabular-nums">
+                    {leftScore ?? "–"}
+                  </span>
+                  <span className="text-2xl text-muted-foreground">–</span>
+                  <span className="font-display text-5xl tabular-nums">
+                    {rightScore ?? "–"}
+                  </span>
+                </div>
+              )}
               <span className="text-[10px] text-muted-foreground uppercase tracking-widest">
-                {match.status === "finished" ? "Final" : match.status === "scheduled" ? "Próximo" : match.status}
+                {match.status === "finished" ? "Final"
+                  : isUpcoming ? "Próximo"
+                  : isPendingResult ? "Pendiente"
+                  : match.status}
               </span>
             </div>
 
@@ -316,8 +333,24 @@ export default async function MatchDetailPage({
           )}
         </div>
 
+        {/* ── Pending result banner (admin) ─────────────────── */}
+        {isPendingResult && isAdmin && (
+          <div className="bg-yellow-400/10 border border-yellow-400/30 rounded-xl p-4 mb-4 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-yellow-400">Este partido ya pasó</p>
+              <p className="text-xs text-muted-foreground mt-0.5">¿Ya tienes el resultado?</p>
+            </div>
+            <Link
+              href={`/matches/${matchId}/edit`}
+              className="bg-yellow-400/20 text-yellow-400 text-xs uppercase tracking-wider px-3 py-2 rounded-lg shrink-0"
+            >
+              Agregar resultado
+            </Link>
+          </div>
+        )}
+
         {/* ── Events timeline ───────────────────────────────── */}
-        {displayEvents.length > 0 && (
+        {!isUpcoming && displayEvents.length > 0 && (
           <section className="mb-6">
             <h2 className="font-display text-lg mb-3">Cronología</h2>
             <div className="bg-card rounded-xl divide-y divide-border/30">
@@ -331,11 +364,12 @@ export default async function MatchDetailPage({
                   {/* Icon */}
                   <div className={cn(
                     "w-7 h-7 rounded-full flex items-center justify-center text-sm shrink-0",
-                    (ev.type === "goal" || ev.type === "own_goal") && "bg-accent/15",
+                    (ev.type === "goal" || ev.type === "own_goal" || ev.type === "opponent_goal") && "bg-accent/15",
+                    ev.isOpponent && ev.type !== "yellow_card" && ev.type !== "red_card" && "bg-muted",
                     ev.type === "yellow_card" && "bg-yellow-400/20",
                     ev.type === "red_card" && "bg-destructive/20",
                   )}>
-                    {(ev.type === "goal" || ev.type === "own_goal") && "⚽"}
+                    {(ev.type === "goal" || ev.type === "own_goal" || ev.type === "opponent_goal") && "⚽"}
                     {ev.type === "yellow_card" && "🟨"}
                     {ev.type === "red_card" && "🟥"}
                   </div>
@@ -363,19 +397,36 @@ export default async function MatchDetailPage({
                         Autogol rival
                       </p>
                     )}
+                    {ev.type === "opponent_goal" && (
+                      <p className="text-sm font-medium leading-tight text-muted-foreground">
+                        Gol del rival
+                      </p>
+                    )}
                     {ev.type === "yellow_card" && (
                       <p className="text-sm font-medium leading-tight">
-                        {ev.playerName ?? "Jugador"}
-                        {ev.playerNumber != null && (
-                          <span className="text-muted-foreground font-normal"> #{ev.playerNumber}</span>
+                        {ev.isOpponent ? (
+                          <span className="text-muted-foreground">Rival</span>
+                        ) : (
+                          <>
+                            {ev.playerName ?? "Jugador"}
+                            {ev.playerNumber != null && (
+                              <span className="text-muted-foreground font-normal"> #{ev.playerNumber}</span>
+                            )}
+                          </>
                         )}
                       </p>
                     )}
                     {ev.type === "red_card" && (
                       <p className="text-sm font-medium leading-tight text-destructive">
-                        {ev.playerName ?? "Jugador"}
-                        {ev.playerNumber != null && (
-                          <span className="font-normal"> #{ev.playerNumber}</span>
+                        {ev.isOpponent ? (
+                          <span>Rival</span>
+                        ) : (
+                          <>
+                            {ev.playerName ?? "Jugador"}
+                            {ev.playerNumber != null && (
+                              <span className="font-normal"> #{ev.playerNumber}</span>
+                            )}
+                          </>
                         )}
                       </p>
                     )}
@@ -384,6 +435,13 @@ export default async function MatchDetailPage({
               ))}
             </div>
           </section>
+        )}
+
+        {/* ── No events yet (upcoming) ──────────────────────── */}
+        {isUpcoming && (
+          <div className="bg-card rounded-xl p-5 text-center mb-6 border border-border/30">
+            <p className="text-muted-foreground text-sm">El partido aún no ha comenzado</p>
+          </div>
         )}
 
         {/* ── Attendees panel ───────────────────────────────── */}

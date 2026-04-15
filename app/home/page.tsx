@@ -4,10 +4,12 @@ import { AppShell } from "@/components/app-shell"
 import { StatCard } from "@/components/stat-card"
 import { MatchCard } from "@/components/match-card"
 import { AttendanceWidget } from "@/components/attendance-widget"
+import { getActiveTeamMembership } from "@/lib/team"
 import Image from "next/image"
 import Link from "next/link"
 import {
   ChevronRight,
+  ChevronDown,
   Calendar,
   Users,
   Settings,
@@ -94,22 +96,17 @@ export default async function HomePage() {
   if (!user) redirect("/auth/login")
 
   // 2. Get active team membership
-  const { data: membership } = await supabase
-    .from("team_members")
-    .select(
-      `team_id, role,
-       teams ( id, name, logo_url, primary_color, secondary_color, created_at )`
-    )
-    .eq("user_id", user.id)
-    .eq("status", "active")
-    .limit(1)
-    .maybeSingle()
-
-  if (!membership?.teams) {
-    redirect("/onboarding")
-  }
+  const membership = await getActiveTeamMembership(supabase, user.id)
+  if (!membership) redirect("/team-select")
 
   const team = membership.teams as Team
+
+  // Check if user belongs to multiple teams (for switcher)
+  const { count: teamCount } = await supabase
+    .from("team_members")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("status", "active")
 
   // 3. Fetch all data in parallel
   const [statsResult, nextMatchResult, recentMatchesResult] = await Promise.all([
@@ -153,16 +150,34 @@ export default async function HomePage() {
   const nextMatch: Match | null = nextMatchResult.data ?? null
   const recentMatches: Match[] = recentMatchesResult.data ?? []
 
-  // 4. Fetch my attendance for next match (if any)
-  let myNextMatchAttendance: "confirmed" | "declined" | null = null
-  if (nextMatch) {
-    const { data: attData } = await supabase
-      .from("match_attendance")
-      .select("status")
-      .eq("match_id", nextMatch.id)
-      .eq("user_id", user.id)
-      .maybeSingle()
-    myNextMatchAttendance = (attData?.status as "confirmed" | "declined" | null) ?? null
+  // 4. Fetch attendance in parallel: next match + recent finished matches
+  const recentMatchIds = recentMatches.map((m) => m.id)
+  const recentAttendanceMap: Record<string, "confirmed" | "declined" | null> =
+    Object.fromEntries(recentMatchIds.map((id) => [id, null]))
+
+  const [nextAttResult, recentAttResult] = await Promise.all([
+    nextMatch
+      ? supabase
+          .from("match_attendance")
+          .select("status")
+          .eq("match_id", nextMatch.id)
+          .eq("user_id", user.id)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    recentMatchIds.length > 0
+      ? supabase
+          .from("match_attendance")
+          .select("match_id, status")
+          .eq("user_id", user.id)
+          .in("match_id", recentMatchIds)
+      : Promise.resolve({ data: [] as { match_id: string; status: string }[], error: null }),
+  ])
+
+  const myNextMatchAttendance =
+    (nextAttResult.data?.status as "confirmed" | "declined" | null) ?? null
+
+  for (const row of recentAttResult.data ?? []) {
+    recentAttendanceMap[row.match_id] = row.status as "confirmed" | "declined"
   }
 
   // 5. Derived values
@@ -207,9 +222,21 @@ export default async function HomePage() {
               <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
                 Bienvenido a
               </p>
-              <h1 className="font-display text-2xl leading-tight truncate">
-                {team.name}
-              </h1>
+              {(teamCount ?? 0) >= 2 ? (
+                <Link
+                  href="/team-select"
+                  className="flex items-center gap-1 group"
+                >
+                  <h1 className="font-display text-2xl leading-tight truncate group-hover:text-accent transition-colors">
+                    {team.name}
+                  </h1>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                </Link>
+              ) : (
+                <h1 className="font-display text-2xl leading-tight truncate">
+                  {team.name}
+                </h1>
+              )}
             </div>
           </div>
           <Link
@@ -232,6 +259,7 @@ export default async function HomePage() {
             nextMatch={nextMatch}
             recentMatches={recentMatches}
             myNextMatchAttendance={myNextMatchAttendance}
+            recentAttendanceMap={recentAttendanceMap}
           />
         )}
       </div>
@@ -311,6 +339,7 @@ function Dashboard({
   nextMatch,
   recentMatches,
   myNextMatchAttendance,
+  recentAttendanceMap,
 }: {
   team: Team
   stats: TeamStats
@@ -319,6 +348,7 @@ function Dashboard({
   nextMatch: Match | null
   recentMatches: Match[]
   myNextMatchAttendance: "confirmed" | "declined" | null
+  recentAttendanceMap: Record<string, "confirmed" | "declined" | null>
 }) {
   return (
     <div className="space-y-5">
@@ -476,17 +506,29 @@ function Dashboard({
         {recentMatches.length > 0 ? (
           <div className="space-y-2">
             {recentMatches.map((m) => (
-              <MatchCard
-                key={m.id}
-                id={m.id}
-                homeTeam={team.name}
-                awayTeam={m.opponent_name}
-                homeScore={m.goals_for ?? undefined}
-                awayScore={m.goals_against ?? undefined}
-                date={formatDate(m.match_date)}
-                competition={typeLabel(m.type)}
-                result={matchResult(m)}
-              />
+              <div key={m.id}>
+                <MatchCard
+                  id={m.id}
+                  homeTeam={team.name}
+                  awayTeam={m.opponent_name}
+                  homeScore={m.goals_for ?? undefined}
+                  awayScore={m.goals_against ?? undefined}
+                  date={formatDate(m.match_date)}
+                  competition={typeLabel(m.type)}
+                  result={matchResult(m)}
+                  className={recentAttendanceMap[m.id] === null ? "rounded-b-none" : ""}
+                />
+                {recentAttendanceMap[m.id] === null && (
+                  <div className="bg-card rounded-b-lg border-x border-b border-border/30 px-4 pb-3">
+                    <AttendanceWidget
+                      matchId={m.id}
+                      currentStatus={null}
+                      compact
+                      matchStatus="finished"
+                    />
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         ) : (
