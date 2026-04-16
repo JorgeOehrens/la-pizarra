@@ -64,7 +64,7 @@ export async function saveMatch(
 
   const updateResult = updateData as { ok?: boolean; error?: string }
   if (updateResult?.error === "not_found") return { error: "Partido no encontrado." }
-  if (updateResult?.error === "not_admin") return { error: "Solo los administradores pueden editar partidos." }
+  if (updateResult?.error === "not_member") return { error: "Debes ser miembro activo del equipo para editar partidos." }
   if (updateResult?.error) return { error: "Error al actualizar el partido." }
 
   // 2. Replace events

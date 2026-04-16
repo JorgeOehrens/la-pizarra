@@ -18,7 +18,6 @@ export default async function EditMatchPage({
 
   const membership = await getActiveTeamMembership(supabase, user.id)
   if (!membership) redirect("/team-select")
-  if (membership.role !== "admin") redirect(`/matches/${matchId}`)
 
   const teamId = membership.team_id
 

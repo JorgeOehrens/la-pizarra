@@ -1,55 +1,67 @@
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 import Link from "next/link"
-import { ChevronRight } from "lucide-react"
 
-export default function WelcomePage() {
+export default async function WelcomePage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) redirect("/home")
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Hero section */}
-      <div className="flex-1 flex flex-col justify-center px-6 py-12">
-        {/* Logo / Brand */}
-        <div className="mb-12">
-          <h1 className="font-display text-6xl md:text-8xl text-foreground leading-none">
-            LA<br/>PIZARRA
-          </h1>
-          <div className="h-1 w-16 bg-accent mt-4" />
+    <div className="min-h-[100dvh] bg-black flex flex-col relative overflow-hidden">
+      {/* Dot grid */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px)",
+          backgroundSize: "22px 22px",
+        }}
+      />
+      {/* Accent haze top */}
+      <div className="absolute top-0 left-0 right-0 h-64 bg-gradient-to-b from-[#D7FF00]/[0.05] to-transparent pointer-events-none" />
+      {/* Stadium green bottom */}
+      <div className="absolute bottom-0 left-0 right-0 h-72 bg-gradient-to-t from-emerald-950/30 to-transparent pointer-events-none" />
+
+      {/* Branding */}
+      <div className="relative z-10 flex-1 flex flex-col justify-center px-6 pt-16">
+        <div className="mb-2">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-white/30 font-sans mb-4">
+            Fútbol amateur · 2026
+          </p>
+          <h1 className="font-display text-[76px] leading-none text-white">LA</h1>
+          <h1 className="font-display text-[76px] leading-none text-[#D7FF00] -mt-2">PIZARRA</h1>
+          <div className="h-0.5 w-12 bg-[#D7FF00] mt-5 mb-6" />
+          <p className="text-white/40 text-base leading-relaxed max-w-[260px] font-sans">
+            Gestión de equipos, partidos y estadísticas para fútbol amateur.
+          </p>
         </div>
-        
-        {/* Tagline */}
-        <p className="text-lg text-muted-foreground max-w-xs leading-relaxed">
-          Gestión de equipo y seguimiento del rendimiento histórico para equipos de fútbol amateur.
-        </p>
       </div>
-      
-      {/* Actions */}
-      <div className="px-6 pb-12 space-y-3">
+
+      {/* CTAs */}
+      <div className="relative z-10 px-6 pb-12 space-y-3">
         <Link
           href="/onboarding/create-team"
-          className="flex items-center justify-between w-full bg-accent text-accent-foreground px-6 py-4 rounded-lg font-medium transition-colors hover:bg-accent-hover active:scale-[0.98]"
+          className="flex items-center justify-center w-full bg-[#D7FF00] text-black py-[17px] rounded-xl font-display text-xl uppercase tracking-wide hover:bg-[#BFE600] active:scale-[0.98] transition-all"
         >
-          <span className="uppercase tracking-wider text-sm">Crear equipo</span>
-          <ChevronRight className="h-5 w-5" />
+          Crear equipo
         </Link>
-        
+
         <Link
-          href="/onboarding/join-team"
-          className="flex items-center justify-between w-full bg-card text-foreground px-6 py-4 rounded-lg font-medium border border-border transition-colors hover:bg-muted active:scale-[0.98]"
+          href="/auth/login"
+          className="flex items-center justify-center w-full border border-white/15 text-white py-[17px] rounded-xl font-display text-xl uppercase tracking-wide hover:border-white/30 hover:text-white active:scale-[0.98] transition-all"
         >
-          <span className="uppercase tracking-wider text-sm">Unirse a equipo</span>
-          <ChevronRight className="h-5 w-5" />
+          Iniciar sesión
         </Link>
-        
-        <div className="pt-4 text-center">
-          <Link 
-            href="/auth/login"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+
+        <div className="text-center pt-2">
+          <Link
+            href="/onboarding/join-team"
+            className="text-sm text-white/30 hover:text-white/60 transition-colors font-sans"
           >
-            ¿Ya tienes cuenta? <span className="text-accent">Iniciar sesión</span>
+            Tengo un código de invitación →
           </Link>
         </div>
       </div>
-      
-      {/* Decorative element */}
-      <div className="absolute top-0 right-0 w-1/2 h-1/3 bg-gradient-to-bl from-accent/5 to-transparent pointer-events-none" />
     </div>
   )
 }

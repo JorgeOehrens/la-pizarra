@@ -349,7 +349,6 @@ export function AddEventSheet({
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full bg-background rounded-xl pl-11 pr-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/40"
-                      autoFocus
                     />
                   </div>
                 </>
@@ -384,7 +383,6 @@ export function AddEventSheet({
                       value={assistSearch}
                       onChange={(e) => setAssistSearch(e.target.value)}
                       className="w-full bg-background rounded-xl pl-11 pr-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/40"
-                      autoFocus
                     />
                   </div>
                 </>

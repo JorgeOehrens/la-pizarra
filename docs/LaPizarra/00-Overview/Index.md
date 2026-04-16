@@ -32,6 +32,8 @@ LaPizarra resuelve un problema real en el fútbol amateur: **la información de 
 | Auth & Flow Agent | [[04-Auth/Auth-Flow]] | Registro, invitaciones, roles |
 | Match & Stats Agent | [[05-Matches/Match-Model]] | Partidos, eventos, estadísticas |
 | Implementation Planner | [[07-Roadmap/Phases]] | Fases, orden, prioridades |
+| Fintech UX Agent | [[11-Finance/13-payment-ux]] | UX de cobros y pagos |
+| Payments Logic Agent | [[11-Finance/14-distribution-rules]] | Lógica de distribución y reparto |
 | Documentation Agent | [[00-Overview/Index]] | Esta knowledge base |
 
 ---
@@ -40,6 +42,7 @@ LaPizarra resuelve un problema real en el fútbol amateur: **la información de 
 
 - [[01-Product/MVP-Scope]] — Qué construimos en el MVP
 - [[01-Product/User-Stories]] — Flujos de usuario concretos
+- [[01-Product/Home-Screen]] — Selector de equipo: 3 estados, diseño FIFA, decisiones
 - [[02-Architecture/System-Architecture]] — Cómo está construido
 - [[02-Architecture/Tech-Stack]] — Decisiones de tecnología
 - [[03-Database/Schema]] — Modelo de datos completo
@@ -56,14 +59,38 @@ LaPizarra resuelve un problema real en el fútbol amateur: **la información de 
 - [[08-Decisions/ADR-002-Database]] — Decisión: Supabase
 - [[08-Decisions/ADR-003-Stack]] — Decisión: Next.js + Supabase
 - [[09-Open-Questions/Questions]] — Dudas abiertas
+- [[10-Integrations/Index]] — Integraciones externas (wearables, salud)
+- [[10-Integrations/Health-Wearables]] — Apple Health, Google Fit, Garmin y otros
+- [[11-Finance/10-feature-overview]] — Finanzas del equipo: qué es y alcance MVP
+- [[11-Finance/11-use-cases]] — Casos de uso: cancha, cuota, asado, poleras
+- [[11-Finance/12-finance-data-model]] — Modelo de datos Supabase para finanzas
+- [[11-Finance/13-payment-ux]] — UX de pagos estilo wallet / payment sheet
+- [[11-Finance/14-distribution-rules]] — Reglas de distribución y reparto de cobros
+- [[11-Finance/15-finance-roadmap]] — Roadmap: MVP, Fase 2, integración real
+- [[11-Finance/16-open-questions]] — Preguntas abiertas del módulo
+- [[11-Finance/17-decisions-log]] — Log de decisiones y tradeoffs
+- [[11-Finance/18-implementation-notes]] — Referencia técnica post-implementación (FK names, rutas, tipos)
 
 ---
 
 ## Estado del Proyecto
 
-- **Fase actual:** Planificación y diseño de base de datos
-- **Próximo hito:** Schema de Supabase listo para migrar
+- **Fase actual:** Módulo de Finanzas implementado y en producción
 - **Fecha de inicio:** 2026-04-14
+- **Última actualización:** 2026-04-16 (Home Screen FIFA selector implementado)
+
+### Módulos en producción
+
+| Módulo | Estado | Notas |
+|---|---|---|
+| Auth (email + username) | ✅ Producción | Sin email opcional |
+| Equipos y miembros | ✅ Producción | Multi-equipo, roles admin/player |
+| Invitaciones | ✅ Producción | Link + código de 6 caracteres |
+| Partidos y eventos | ✅ Producción | Goles, asistencias, tarjetas |
+| Estadísticas | ✅ Producción | Vista calculada player_stats |
+| **Finanzas del equipo** | ✅ **Producción** | MVP completo — ver [[11-Finance/10-feature-overview]] |
+| **Home / Selector de equipo** | ✅ **Producción** | FIFA-style, 3 estados — ver [[01-Product/Home-Screen]] |
+| Analytics avanzado | 🔜 Fase 2 | Tab temporalmente reemplazado por Finanzas |
 
 ---
 

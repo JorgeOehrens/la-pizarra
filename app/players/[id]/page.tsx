@@ -3,10 +3,11 @@ import { redirect } from "next/navigation"
 import { AppShell } from "@/components/app-shell"
 import { StatCard } from "@/components/stat-card"
 import { getActiveTeamMembership } from "@/lib/team"
-import { ChevronLeft, Edit } from "lucide-react"
+import { ChevronLeft, Edit, Dumbbell } from "lucide-react"
 import Link from "next/link"
-import { format } from "date-fns"
+import { format, startOfWeek } from "date-fns"
 import { es } from "date-fns/locale"
+import { features } from "@/lib/features"
 
 const POSITION_LABEL: Record<string, string> = {
   goalkeeper: "Portero",
@@ -33,8 +34,12 @@ export default async function PlayerDetailPage({
   const isAdmin = membership.role === "admin"
   const isOwnProfile = user.id === playerId
 
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
+    .toISOString()
+    .split("T")[0]
+
   // Fetch player data in parallel
-  const [memberResult, statsResult, eventsResult] = await Promise.all([
+  const [memberResult, statsResult, eventsResult, trainingWeekResult, trainingRecentResult] = await Promise.all([
     supabase
       .from("team_members")
       .select("jersey_number, position, role, profiles(display_name, username, avatar_url)")
@@ -57,6 +62,23 @@ export default async function PlayerDetailPage({
       .eq("team_id", teamId)
       .order("created_at", { ascending: false })
       .limit(15),
+
+    features.training
+      ? supabase
+          .from("training_sessions")
+          .select("duration_minutes, distance_km, session_type")
+          .eq("user_id", playerId)
+          .gte("session_date", weekStart)
+      : Promise.resolve({ data: [], error: null }),
+
+    features.training
+      ? supabase
+          .from("training_sessions")
+          .select("id, session_type, title, session_date, duration_minutes, distance_km, intensity")
+          .eq("user_id", playerId)
+          .order("session_date", { ascending: false })
+          .limit(3)
+      : Promise.resolve({ data: [], error: null }),
   ])
 
   if (!memberResult.data) redirect("/team")
@@ -100,6 +122,19 @@ export default async function PlayerDetailPage({
   const activityFeed = allEvents.filter(
     (e) => e.event_type === "goal" || e.event_type === "assist"
   )
+
+  const trainingWeek = (trainingWeekResult.data ?? [])
+  const trainingWeekSessions = trainingWeek.length
+  const trainingWeekMinutes = trainingWeek.reduce((s, t) => s + (t.duration_minutes ?? 0), 0)
+  const trainingWeekKm = trainingWeek.reduce((s, t) => s + (t.distance_km ?? 0), 0)
+  const recentSessions = trainingRecentResult.data ?? []
+
+  const SESSION_TYPE_LABEL: Record<string, string> = {
+    running: "Carrera", gym: "Gimnasio", field: "Campo", cycling: "Ciclismo", other: "Otro",
+  }
+  const SESSION_TYPE_EMOJI: Record<string, string> = {
+    running: "🏃", gym: "🏋️", field: "⚽", cycling: "🚴", other: "💪",
+  }
 
   const canEdit = isAdmin || isOwnProfile
 
@@ -198,7 +233,7 @@ export default async function PlayerDetailPage({
         </section>
 
         {/* Detailed stats */}
-        <section className="bg-card rounded-xl p-5 border border-border/40">
+        <section className="bg-card rounded-xl p-5 border border-border/40 mb-6">
           <h3 className="font-display text-lg mb-4">Estadísticas detalladas</h3>
           <div className="space-y-1">
             <StatRow
@@ -226,6 +261,74 @@ export default async function PlayerDetailPage({
             />
           </div>
         </section>
+
+        {/* Training section */}
+        {features.training && (
+          <section className="bg-card rounded-xl p-5 border border-border/40">
+            <div className="flex items-center gap-2 mb-4">
+              <Dumbbell className="h-4 w-4 text-accent" />
+              <h3 className="font-display text-lg">Entrenamiento</h3>
+              <span className="text-xs text-muted-foreground ml-auto">Esta semana</span>
+            </div>
+
+            {trainingWeekSessions === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-3">
+                Sin sesiones esta semana
+              </p>
+            ) : (
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className="bg-accent/8 rounded-xl p-3 text-center">
+                  <p className="font-display text-2xl text-accent">{trainingWeekSessions}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase mt-0.5">Sesiones</p>
+                </div>
+                <div className="bg-muted/40 rounded-xl p-3 text-center">
+                  <p className="font-display text-2xl">
+                    {trainingWeekMinutes >= 60
+                      ? `${Math.floor(trainingWeekMinutes / 60)}h${trainingWeekMinutes % 60 > 0 ? `${trainingWeekMinutes % 60}m` : ""}`
+                      : `${trainingWeekMinutes}m`}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground uppercase mt-0.5">Tiempo</p>
+                </div>
+                <div className="bg-muted/40 rounded-xl p-3 text-center">
+                  <p className="font-display text-2xl">
+                    {trainingWeekKm > 0 ? `${trainingWeekKm.toFixed(1)}` : "—"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground uppercase mt-0.5">km</p>
+                </div>
+              </div>
+            )}
+
+            {recentSessions.length > 0 && (
+              <>
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
+                  Últimas sesiones
+                </p>
+                <div className="space-y-2">
+                  {recentSessions.map((s) => (
+                    <div key={s.id} className="flex items-center gap-3">
+                      <span className="text-xl w-8 text-center flex-shrink-0">
+                        {SESSION_TYPE_EMOJI[s.session_type] ?? "💪"}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {s.title || SESSION_TYPE_LABEL[s.session_type] || "Sesión"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(s.session_date + "T12:00:00"), "d MMM", { locale: es })}
+                          {" · "}
+                          {s.duration_minutes >= 60
+                            ? `${Math.floor(s.duration_minutes / 60)}h${s.duration_minutes % 60 > 0 ? `${s.duration_minutes % 60}m` : ""}`
+                            : `${s.duration_minutes}min`}
+                          {s.distance_km ? ` · ${s.distance_km}km` : ""}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </section>
+        )}
       </div>
     </AppShell>
   )

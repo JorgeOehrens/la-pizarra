@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { PerformanceRing } from "@/components/performance-ring"
 import { PlayerCard } from "@/components/player-card"
 import { AddPlayerSheet } from "@/components/add-player-sheet"
-import { Plus, Settings, Shield } from "lucide-react"
+import { Plus, Settings, Shield, Globe, Lock, UserCheck, CheckCircle2, XCircle, Dumbbell } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { updateJoinMode, approveJoinRequest, rejectJoinRequest } from "./actions"
+import { features } from "@/lib/features"
 
 export type MemberWithStats = {
   id: string
@@ -53,20 +55,44 @@ const POSITION_LABEL: Record<string, string> = {
   forward: "Delantero",
 }
 
+export type JoinRequest = {
+  id: string
+  user_id: string
+  created_at: string
+  display_name: string
+  username: string
+}
+
+export type TrainingWeekEntry = {
+  user_id: string
+  sessions: number
+  minutes: number
+  km: number
+}
+
 export function TeamView({
   team,
   members,
   stats,
   isAdmin,
+  joinMode,
+  joinRequests,
+  trainingWeek = [],
 }: {
   team: Team
   members: MemberWithStats[]
   stats: TeamStats
   isAdmin: boolean
+  joinMode: "open" | "request" | "invite_only"
+  joinRequests: JoinRequest[]
+  trainingWeek?: TrainingWeekEntry[]
 }) {
-  const [activeTab, setActiveTab] = useState<"stats" | "lineup">("stats")
+  const [activeTab, setActiveTab] = useState<"stats" | "lineup" | "admin">("stats")
   const [activePosition, setActivePosition] = useState<string | null>(null)
   const [addPlayerOpen, setAddPlayerOpen] = useState(false)
+  const [currentJoinMode, setCurrentJoinMode] = useState(joinMode)
+  const [pendingRequests, setPendingRequests] = useState(joinRequests)
+  const [, startTransition] = useTransition()
 
   const filtered =
     activePosition === null
@@ -128,23 +154,48 @@ export function TeamView({
 
         {/* Tabs */}
         <div className="flex bg-card rounded-xl p-1 mb-6 border border-border/40">
-          {(["stats", "lineup"] as const).map((tab) => (
+          {(["stats", "lineup", ...(isAdmin ? (["admin"] as const) : [])] as const).map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => setActiveTab(tab as "stats" | "lineup" | "admin")}
               className={cn(
-                "flex-1 py-2.5 text-xs uppercase tracking-wider rounded-lg transition-colors",
+                "flex-1 py-2.5 text-xs uppercase tracking-wider rounded-lg transition-colors relative",
                 activeTab === tab
                   ? "bg-accent text-accent-foreground font-medium"
                   : "text-muted-foreground"
               )}
             >
-              {tab === "stats" ? "Stats" : "Plantilla"}
+              {tab === "stats" ? "Stats" : tab === "lineup" ? "Plantilla" : "Admin"}
+              {tab === "admin" && pendingRequests.length > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500" />
+              )}
             </button>
           ))}
         </div>
 
-        {activeTab === "stats" ? (
+        {activeTab === "admin" && isAdmin ? (
+          <AdminTab
+            teamId={team.id}
+            joinMode={currentJoinMode}
+            requests={pendingRequests}
+            onModeChange={(mode) => {
+              setCurrentJoinMode(mode)
+              startTransition(async () => { await updateJoinMode(team.id, mode) })
+            }}
+            onApprove={(req) => {
+              startTransition(async () => {
+                const res = await approveJoinRequest(req.id, team.id, req.user_id)
+                if ("ok" in res) setPendingRequests((p) => p.filter((r) => r.id !== req.id))
+              })
+            }}
+            onReject={(req) => {
+              startTransition(async () => {
+                const res = await rejectJoinRequest(req.id)
+                if ("ok" in res) setPendingRequests((p) => p.filter((r) => r.id !== req.id))
+              })
+            }}
+          />
+        ) : activeTab === "stats" ? (
           <>
             {/* Performance */}
             <section className="bg-card rounded-xl p-5 mb-5 border border-border/40">
@@ -227,7 +278,7 @@ export function TeamView({
             </section>
 
             {/* Top Players */}
-            <section>
+            <section className={features.training ? "mb-5" : ""}>
               <h2 className="font-display text-lg mb-4">Jugadores destacados</h2>
               {topPlayers.length > 0 ? (
                 <div className="grid grid-cols-2 gap-3">
@@ -253,6 +304,11 @@ export function TeamView({
                 </div>
               )}
             </section>
+
+            {/* Training this week */}
+            {features.training && (
+              <TrainingWeekSection members={members} trainingWeek={trainingWeek} />
+            )}
           </>
         ) : (
           <>
@@ -376,5 +432,225 @@ export function TeamView({
         isAdmin={isAdmin}
       />
     </>
+  )
+}
+
+// ─── Training Week Section ────────────────────────────────────────────────────
+
+function TrainingWeekSection({
+  members,
+  trainingWeek,
+}: {
+  members: MemberWithStats[]
+  trainingWeek: TrainingWeekEntry[]
+}) {
+  const activeMembersCount = members.filter((m) => !m.is_guest && m.user_id).length
+  const trainedCount = trainingWeek.length
+  const participationPct = activeMembersCount > 0
+    ? Math.round((trainedCount / activeMembersCount) * 100)
+    : 0
+
+  const leaderboard = trainingWeek
+    .map((t) => {
+      const member = members.find((m) => m.user_id === t.user_id)
+      return { ...t, display_name: member?.display_name ?? "Jugador" }
+    })
+    .sort((a, b) => b.sessions - a.sessions || b.minutes - a.minutes)
+    .slice(0, 5)
+
+  return (
+    <section className="bg-card rounded-xl p-5 border border-border/40 mb-4">
+      <div className="flex items-center gap-2 mb-4">
+        <Dumbbell className="h-4 w-4 text-accent" />
+        <h2 className="font-display text-lg">Entrenamiento esta semana</h2>
+      </div>
+
+      {/* Participation */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-sm text-muted-foreground">
+            {trainedCount} de {activeMembersCount} jugadores
+          </span>
+          <span className="text-sm font-medium text-accent">{participationPct}%</span>
+        </div>
+        <div className="h-2 bg-muted rounded-full overflow-hidden">
+          <div
+            className="h-full bg-accent rounded-full transition-all duration-500"
+            style={{ width: `${participationPct}%` }}
+          />
+        </div>
+      </div>
+
+      {leaderboard.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-3">
+          Ningún jugador ha entrenado esta semana
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {leaderboard.map((entry, i) => (
+            <div key={entry.user_id} className="flex items-center gap-3">
+              <span className={cn(
+                "font-display text-base w-5 text-center flex-shrink-0",
+                i === 0 ? "text-accent" : "text-muted-foreground"
+              )}>
+                {i + 1}
+              </span>
+              <div
+                className="w-8 h-8 rounded-full bg-muted flex items-center justify-center font-display text-sm flex-shrink-0"
+              >
+                {entry.display_name.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{entry.display_name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {entry.sessions} sesión{entry.sessions !== 1 ? "es" : ""}
+                  {entry.km > 0 ? ` · ${entry.km.toFixed(1)} km` : ""}
+                </p>
+              </div>
+              <span className="text-xs text-muted-foreground flex-shrink-0">
+                {entry.minutes >= 60
+                  ? `${Math.floor(entry.minutes / 60)}h${entry.minutes % 60 > 0 ? `${entry.minutes % 60}m` : ""}`
+                  : `${entry.minutes}m`}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+// ─── Admin Tab ────────────────────────────────────────────────────────────────
+
+const JOIN_MODE_OPTIONS = [
+  {
+    value: "open" as const,
+    label: "Abierto",
+    desc: "Cualquiera puede unirse directamente",
+    icon: Globe,
+    color: "text-emerald-400",
+  },
+  {
+    value: "request" as const,
+    label: "Solicitud",
+    desc: "El admin aprueba cada solicitud",
+    icon: UserCheck,
+    color: "text-accent",
+  },
+  {
+    value: "invite_only" as const,
+    label: "Solo invitación",
+    desc: "Solo con link o código de invitación",
+    icon: Lock,
+    color: "text-muted-foreground",
+  },
+]
+
+function AdminTab({
+  teamId: _teamId,
+  joinMode,
+  requests,
+  onModeChange,
+  onApprove,
+  onReject,
+}: {
+  teamId: string
+  joinMode: "open" | "request" | "invite_only"
+  requests: JoinRequest[]
+  onModeChange: (mode: "open" | "request" | "invite_only") => void
+  onApprove: (req: JoinRequest) => void
+  onReject: (req: JoinRequest) => void
+}) {
+  return (
+    <div className="space-y-5 pb-6">
+      {/* Join mode */}
+      <section>
+        <h2 className="font-display text-lg mb-1">Modo de acceso</h2>
+        <p className="text-xs text-muted-foreground mb-4">
+          Controla cómo los jugadores pueden unirse a este equipo en el directorio.
+        </p>
+        <div className="space-y-2">
+          {JOIN_MODE_OPTIONS.map((opt) => {
+            const Icon = opt.icon
+            const isActive = joinMode === opt.value
+            return (
+              <button
+                key={opt.value}
+                onClick={() => !isActive && onModeChange(opt.value)}
+                className={cn(
+                  "w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-all",
+                  isActive
+                    ? "bg-accent/10 border-accent/40"
+                    : "bg-card border-border/40 hover:border-border"
+                )}
+              >
+                <Icon className={cn("h-5 w-5 flex-shrink-0", isActive ? opt.color : "text-muted-foreground")} />
+                <div className="flex-1 min-w-0">
+                  <p className={cn("text-sm font-medium", isActive && "text-accent")}>{opt.label}</p>
+                  <p className="text-xs text-muted-foreground">{opt.desc}</p>
+                </div>
+                {isActive && (
+                  <div className="w-2 h-2 rounded-full bg-accent flex-shrink-0" />
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* Pending requests */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-lg">Solicitudes pendientes</h2>
+          {requests.length > 0 && (
+            <span className="text-xs bg-red-500/15 text-red-400 px-2 py-0.5 rounded-full">
+              {requests.length}
+            </span>
+          )}
+        </div>
+
+        {requests.length === 0 ? (
+          <div className="bg-card rounded-xl p-6 text-center border border-border/40">
+            <UserCheck className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">Sin solicitudes pendientes</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {requests.map((req) => (
+              <div
+                key={req.id}
+                className="bg-card rounded-xl p-4 border border-border/40 flex items-center gap-3"
+              >
+                <div className="w-10 h-10 rounded-full bg-accent/15 flex items-center justify-center flex-shrink-0">
+                  <span className="font-display text-lg text-accent">
+                    {req.display_name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{req.display_name}</p>
+                  <p className="text-xs text-muted-foreground">@{req.username}</p>
+                </div>
+                <div className="flex gap-1.5 flex-shrink-0">
+                  <button
+                    onClick={() => onApprove(req)}
+                    className="p-2 rounded-lg bg-accent/15 hover:bg-accent/25 text-accent transition-colors"
+                    title="Aprobar"
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => onReject(req)}
+                    className="p-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors"
+                    title="Rechazar"
+                  >
+                    <XCircle className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
   )
 }

@@ -197,7 +197,7 @@ export default async function MatchDetailPage({
             <ChevronLeft className="h-5 w-5" />
           </Link>
           <h1 className="font-display text-lg truncate px-2">{competitionLabel}</h1>
-          {isAdmin && match.status !== "cancelled" && match.status !== "postponed" ? (
+          {match.status !== "cancelled" && match.status !== "postponed" ? (
             <Link
               href={`/matches/${matchId}/edit`}
               className="p-2 -mr-2 rounded-lg hover:bg-card text-muted-foreground"
@@ -334,7 +334,7 @@ export default async function MatchDetailPage({
         </div>
 
         {/* ── Pending result banner (admin) ─────────────────── */}
-        {isPendingResult && isAdmin && (
+        {isPendingResult && (
           <div className="bg-yellow-400/10 border border-yellow-400/30 rounded-xl p-4 mb-4 flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium text-yellow-400">Este partido ya pasó</p>

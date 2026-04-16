@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "07-Roadmap/Phases.md",
+                "file": "09-Open-Questions/Questions.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Phases"
+              "title": "Questions"
             }
           }
         ]
@@ -183,28 +183,32 @@
       "bases:Create new base": false
     }
   },
-  "active": "c76bd6c089b93321",
+  "active": "f3d15a8cb406cbf0",
   "lastOpenFiles": [
-    "02-Architecture/Module-Map.md",
-    "09-Open-Questions/Questions.md",
     "08-Decisions/ADR-003-Stack.md",
-    "08-Decisions/ADR-002-Database.md",
     "08-Decisions/ADR-001-Auth.md",
-    "07-Roadmap/MVP-Checklist.md",
+    "08-Decisions/ADR-002-Database.md",
     "07-Roadmap/Phases.md",
+    "07-Roadmap/MVP-Checklist.md",
     "06-Stats/Stats-Model.md",
     "06-Stats/Calculations.md",
     "05-Matches/Match-Model.md",
     "05-Matches/Events-Model.md",
+    "02-Architecture/Tech-Stack.md",
+    "02-Architecture/System-Architecture.md",
+    "02-Architecture/Module-Map.md",
+    "01-Product/User-Stories.md",
+    "01-Product/Design-Principles.md",
+    "01-Product/MVP-Scope.md",
     "04-Auth/Invitations.md",
     "04-Auth/Auth-Flow.md",
-    "03-Database/Schema.md",
+    "00-Overview/Index.md",
+    "10-Integrations/Health-Wearables.md",
+    "09-Open-Questions/Questions.md",
     "03-Database/RLS-Policies.md",
-    "02-Architecture/System-Architecture.md",
-    "02-Architecture/Tech-Stack.md",
-    "01-Product/User-Stories.md",
-    "01-Product/MVP-Scope.md",
-    "01-Product/Design-Principles.md",
+    "10-Integrations/Index.md",
+    "10-Integrations",
+    "03-Database/Schema.md",
     "03-Database/Migrations.md"
   ]
 }

@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { AppShell } from "@/components/app-shell"
 import { getActiveTeamMembership } from "@/lib/team"
-import { ChevronRight, User, LogOut } from "lucide-react"
+import { ChevronRight, User, LogOut, PlusCircle, Compass, LayoutGrid } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { logout } from "@/app/auth/actions"
@@ -198,6 +198,35 @@ export default async function ProfilePage() {
             <span className="flex-1 text-sm">Editar perfil</span>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </Link>
+          <Link
+            href="/onboarding/create-team"
+            className="flex items-center gap-4 bg-card rounded-xl p-4 active:scale-[0.98] transition-transform"
+          >
+            <PlusCircle className="h-5 w-5 text-muted-foreground" />
+            <span className="flex-1 text-sm">Crear nuevo equipo</span>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </Link>
+          <Link
+            href="/directory"
+            className="flex items-center gap-4 bg-card rounded-xl p-4 active:scale-[0.98] transition-transform"
+          >
+            <Compass className="h-5 w-5 text-muted-foreground" />
+            <div className="flex-1">
+              <span className="text-sm block">Explorar equipos</span>
+              <span className="text-xs text-muted-foreground">Buscar y unirse a un equipo</span>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </Link>
+          {membership && (
+            <Link
+              href="/team-select"
+              className="flex items-center gap-4 bg-card rounded-xl p-4 active:scale-[0.98] transition-transform"
+            >
+              <LayoutGrid className="h-5 w-5 text-muted-foreground" />
+              <span className="flex-1 text-sm">Cambiar de equipo</span>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+          )}
         </nav>
 
         {/* ── Logout ───────────────────────────────────── */}
