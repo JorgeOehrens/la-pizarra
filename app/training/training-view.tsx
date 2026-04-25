@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Plus, X, ChevronRight } from "lucide-react"
+import { Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export type TrainingSession = {
@@ -40,57 +40,6 @@ const SOURCE_BADGE: Record<string, { label: string; bg: string; fg: string }> = 
   nike_run:       { label: "Nike",    bg: "#111",     fg: "#fa5400" },
   apple_health:   { label: "Health",  bg: "#FF375F",  fg: "#fff"    },
 }
-
-const INTEGRATIONS = [
-  {
-    id: "adidas_running",
-    name: "adidas running",
-    tagline: "Sincroniza tus entrenamientos",
-    icon: "👟",
-    bg: "linear-gradient(145deg, #141414 0%, #000 100%)",
-    borderColor: "rgba(0,163,108,0.25)",
-    accentColor: "#00A36C",
-    perks: ["Runs y caminatas", "Ritmo y cadencia", "Mapa de ruta", "Frecuencia cardíaca"],
-    mockSessions: 8,
-    mockKm: 42.3,
-  },
-  {
-    id: "strava",
-    name: "Strava",
-    tagline: "Todas tus actividades",
-    icon: "🔥",
-    bg: "linear-gradient(145deg, #d44000 0%, #b33300 100%)",
-    borderColor: "rgba(252,76,2,0.3)",
-    accentColor: "#fff",
-    perks: ["Runs, cycling y más", "Segmentos y KOMs", "Social y kudos", "Análisis avanzado"],
-    mockSessions: 12,
-    mockKm: 67.8,
-  },
-  {
-    id: "nike_run",
-    name: "Nike Run Club",
-    tagline: "Corre con Nike",
-    icon: "✔",
-    bg: "linear-gradient(145deg, #1a1a1a 0%, #0a0a0a 100%)",
-    borderColor: "rgba(250,84,0,0.25)",
-    accentColor: "#fa5400",
-    perks: ["Runs guiados", "Planes de entrenamiento", "Logros Nike", "Desafíos grupales"],
-    mockSessions: 5,
-    mockKm: 28.1,
-  },
-  {
-    id: "apple_health",
-    name: "Apple Health",
-    tagline: "Salud completa en un lugar",
-    icon: "❤️",
-    bg: "linear-gradient(145deg, #d42040 0%, #a81530 100%)",
-    borderColor: "rgba(255,55,95,0.3)",
-    accentColor: "#fff",
-    perks: ["Pasos y calorías", "Frecuencia cardíaca", "Sueño y recuperación", "Todos los workouts"],
-    mockSessions: 21,
-    mockKm: 89.4,
-  },
-]
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -132,153 +81,6 @@ function StatCard({ value, unit, sub }: { value: string | number; unit: string; 
       <p className="font-display text-[30px] leading-none text-white">{value}</p>
       <p className="text-[10px] uppercase tracking-wider text-[#D7FF00] mt-1">{unit}</p>
       <p className="text-[9px] text-white/20 mt-0.5">{sub}</p>
-    </div>
-  )
-}
-
-function IntegrationCard({
-  integ,
-  onTap,
-}: {
-  integ: typeof INTEGRATIONS[number]
-  onTap: () => void
-}) {
-  return (
-    <button
-      onClick={onTap}
-      className="flex-shrink-0 w-[176px] rounded-2xl overflow-hidden text-left active:scale-[0.97] transition-transform"
-      style={{ background: integ.bg, border: `1px solid ${integ.borderColor}` }}
-    >
-      <div className="p-4">
-        <div className="flex items-start justify-between mb-5">
-          <span className="text-2xl">{integ.icon}</span>
-          <span className="text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-black/30 text-white/50">
-            Próx.
-          </span>
-        </div>
-        <p className="font-display text-[28px] leading-none text-white">{integ.mockKm}</p>
-        <p className="text-[10px] text-white/35 mt-0.5">km este mes</p>
-        <div className="mt-4 pt-3 border-t border-white/10">
-          <p className="text-xs font-medium text-white leading-none">{integ.name}</p>
-          <div
-            className="flex items-center gap-0.5 mt-1.5"
-            style={{ color: integ.accentColor === "#fff" ? "rgba(255,255,255,0.45)" : integ.accentColor }}
-          >
-            <span className="text-[10px]">Conectar</span>
-            <ChevronRight className="w-3 h-3" />
-          </div>
-        </div>
-      </div>
-    </button>
-  )
-}
-
-function IntegrationSheet({
-  integ,
-  onClose,
-}: {
-  integ: typeof INTEGRATIONS[number]
-  onClose: () => void
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-5">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
-
-      <div
-        className="relative z-10 w-full max-w-sm rounded-3xl overflow-hidden flex flex-col"
-        style={{ background: "#0e0e0e", border: "1px solid rgba(255,255,255,0.08)", maxHeight: "85dvh" }}
-      >
-        {/* Brand banner */}
-        <div
-          className="px-5 pt-6 pb-5 flex-shrink-0"
-          style={{ background: integ.bg, borderBottom: `1px solid ${integ.borderColor}` }}
-        >
-          <div className="flex items-start justify-between mb-4">
-            <span className="text-3xl">{integ.icon}</span>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-full"
-              style={{ background: "rgba(0,0,0,0.35)" }}
-            >
-              <X className="w-4 h-4 text-white/70" />
-            </button>
-          </div>
-          <h2 className="text-white font-display text-2xl leading-tight mb-0.5">
-            {integ.name}
-          </h2>
-          <p style={{ color: integ.accentColor === "#fff" ? "rgba(255,255,255,0.45)" : integ.accentColor }}
-             className="text-xs">
-            {integ.tagline}
-          </p>
-        </div>
-
-        {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 px-5 py-5 space-y-5">
-          {/* Mock stats */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-4 text-center">
-              <p className="font-display text-3xl text-white">{integ.mockSessions}</p>
-              <p className="text-[10px] text-white/30 uppercase tracking-wider mt-1">sesiones</p>
-            </div>
-            <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-4 text-center">
-              <p className="font-display text-3xl text-white">{integ.mockKm}</p>
-              <p className="text-[10px] text-white/30 uppercase tracking-wider mt-1">km</p>
-            </div>
-          </div>
-
-          {/* What syncs */}
-          <div>
-            <p className="text-[10px] uppercase tracking-wider text-white/25 mb-3">
-              Al conectar, LaPizarra sincroniza:
-            </p>
-            <div className="space-y-2.5">
-              {integ.perks.map((p) => (
-                <div key={p} className="flex items-center gap-3">
-                  <div
-                    className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
-                    style={{
-                      backgroundColor: integ.accentColor === "#fff"
-                        ? "rgba(255,255,255,0.1)"
-                        : integ.accentColor + "22",
-                      color: integ.accentColor === "#fff" ? "rgba(255,255,255,0.6)" : integ.accentColor,
-                    }}
-                  >
-                    ✓
-                  </div>
-                  <span className="text-sm text-white/55">{p}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Sticky CTA */}
-        <div className="flex-shrink-0 px-5 pb-5 pt-3 border-t border-white/[0.06]">
-          <div className="relative">
-            <button
-              disabled
-              className="w-full py-4 rounded-2xl font-display text-base uppercase tracking-wide flex items-center justify-center gap-2 opacity-25 cursor-not-allowed text-white"
-              style={{ background: integ.bg, border: `1px solid ${integ.borderColor}` }}
-            >
-              <span className="text-lg">{integ.icon}</span>
-              Conectar con {integ.name}
-            </button>
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span
-                className="px-4 py-1.5 rounded-full text-xs border flex items-center gap-1.5"
-                style={{
-                  background: "#0e0e0e",
-                  borderColor: "rgba(255,255,255,0.12)",
-                  color: "rgba(255,255,255,0.55)",
-                }}
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-[#D7FF00] inline-block animate-pulse" />
-                Próximamente
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
@@ -372,7 +174,6 @@ export function TrainingView({
   allTime:  { sessions: number; distance: number }
 }) {
   const [filter, setFilter] = useState<FilterType>("all")
-  const [activeInteg, setActiveInteg] = useState<typeof INTEGRATIONS[number] | null>(null)
 
   const filtered = filter === "all"
     ? sessions
@@ -423,27 +224,6 @@ export function TrainingView({
           </Link>
         </div>
       )}
-
-      {/* ── Integrations ── */}
-      <div className="mb-8">
-        <div className="px-4 mb-3 flex items-center justify-between">
-          <p className="text-[11px] uppercase tracking-[0.12em] text-white/25 font-sans">
-            Integraciones
-          </p>
-          <span className="text-[9px] uppercase tracking-wider text-[#D7FF00]/60 px-2 py-0.5 rounded-full border border-[#D7FF00]/20">
-            Próximamente
-          </span>
-        </div>
-        <div className="flex gap-3 px-4 overflow-x-auto pb-2 no-scrollbar">
-          {INTEGRATIONS.map((integ) => (
-            <IntegrationCard
-              key={integ.id}
-              integ={integ}
-              onTap={() => setActiveInteg(integ)}
-            />
-          ))}
-        </div>
-      </div>
 
       {/* ── History ── */}
       <div className="px-4">
@@ -503,14 +283,6 @@ export function TrainingView({
       >
         <Plus className="w-6 h-6 text-black" strokeWidth={2.5} />
       </Link>
-
-      {/* ── Integration sheet ── */}
-      {activeInteg && (
-        <IntegrationSheet
-          integ={activeInteg}
-          onClose={() => setActiveInteg(null)}
-        />
-      )}
     </div>
   )
 }
