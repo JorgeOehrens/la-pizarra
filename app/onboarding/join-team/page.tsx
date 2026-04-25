@@ -81,7 +81,7 @@ export default function JoinTeamPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="px-4 py-4">
+      <header className="px-4 py-4 max-w-lg mx-auto w-full">
         <Link
           href="/onboarding"
           className="inline-flex items-center gap-2 text-muted-foreground"
@@ -91,7 +91,7 @@ export default function JoinTeamPage() {
         </Link>
       </header>
 
-      <div className="flex-1 flex flex-col px-5 pb-12">
+      <div className="flex-1 flex flex-col px-5 pb-12 max-w-lg mx-auto w-full">
         <div className="mb-8 pt-2">
           <h1 className="font-display text-3xl mb-1">Unirse a equipo</h1>
           <p className="text-muted-foreground text-sm">

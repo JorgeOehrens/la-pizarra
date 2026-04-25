@@ -173,7 +173,7 @@ export function NewMatchForm({
     <AppShell showNav={false}>
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background">
-        <div className="flex items-center justify-between px-4 py-4">
+        <div className="flex items-center justify-between px-4 py-4 max-w-lg mx-auto">
           <Link href="/matches" className="p-2 -ml-2 rounded-lg hover:bg-card">
             <ChevronLeft className="h-5 w-5" />
           </Link>
@@ -182,7 +182,7 @@ export function NewMatchForm({
         </div>
       </div>
 
-      <div className="px-4 pb-36">
+      <div className="px-4 pb-36 max-w-lg mx-auto">
         {/* ── Score Card ───────────────────────────────── */}
         <div className="bg-card rounded-2xl p-6 mb-6">
           <div className="flex items-center justify-between gap-2">
@@ -439,14 +439,16 @@ export function NewMatchForm({
 
       {/* ── Fixed Save Button ─────────────────────────── */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-card">
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="w-full bg-accent text-accent-foreground py-4 rounded-xl font-display text-xl uppercase tracking-wide flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-60"
-        >
-          {isSaving && <Loader2 className="h-5 w-5 animate-spin" />}
-          {isSaving ? "Guardando..." : "Guardar partido"}
-        </button>
+        <div className="max-w-lg mx-auto">
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="w-full bg-accent text-accent-foreground py-4 rounded-xl font-display text-xl uppercase tracking-wide flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-60"
+          >
+            {isSaving && <Loader2 className="h-5 w-5 animate-spin" />}
+            {isSaving ? "Guardando..." : "Guardar partido"}
+          </button>
+        </div>
       </div>
 
       <AddEventSheet

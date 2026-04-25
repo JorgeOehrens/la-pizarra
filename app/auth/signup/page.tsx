@@ -147,14 +147,14 @@ function SignupForm() {
 export default function SignupPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="px-4 py-4">
+      <header className="px-4 py-4 max-w-lg mx-auto w-full">
         <Link href="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground">
           <ChevronLeft className="h-5 w-5" />
           <span className="text-sm">Volver</span>
         </Link>
       </header>
 
-      <div className="flex-1 flex flex-col justify-center px-6 pb-12">
+      <div className="flex-1 flex flex-col justify-center px-6 pb-12 max-w-lg mx-auto w-full">
         <Suspense>
           <SignupForm />
         </Suspense>

@@ -184,6 +184,7 @@ export function TrainingView({
 
   return (
     <div className="pb-32">
+     <div className="max-w-lg mx-auto">
       {/* ── Header ── */}
       <div className="px-4 pt-8 pb-2">
         <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.12em] text-white/30 mb-3 font-sans">
@@ -275,6 +276,8 @@ export function TrainingView({
           </div>
         )}
       </div>
+
+     </div>
 
       {/* ── FAB ── */}
       <Link

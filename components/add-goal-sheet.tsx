@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import {
   Sheet,
   SheetContent,
+  SheetHeader,
+  SheetTitle,
 } from "@/components/ui/sheet"
 import { Check, ChevronLeft, Minus, Plus, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -114,6 +116,10 @@ export function AddGoalSheet({ open, onOpenChange, players, onAddEvent }: AddGoa
         side="bottom"
         className="h-[88vh] rounded-t-3xl bg-card border-0 px-0 overflow-hidden"
       >
+        <SheetHeader className="sr-only">
+          <SheetTitle>Agregar gol</SheetTitle>
+        </SheetHeader>
+
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full bg-muted-foreground/25" />

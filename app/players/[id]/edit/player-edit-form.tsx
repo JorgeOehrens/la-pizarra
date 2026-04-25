@@ -78,7 +78,7 @@ export function PlayerEditForm({
     <AppShell showNav={false}>
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm">
-        <div className="flex items-center justify-between px-4 py-4">
+        <div className="flex items-center justify-between px-4 py-4 max-w-lg mx-auto">
           <Link
             href={`/players/${playerId}`}
             className="p-2 -ml-2 rounded-lg hover:bg-card"
@@ -90,7 +90,7 @@ export function PlayerEditForm({
         </div>
       </div>
 
-      <div className="px-4 pb-12 space-y-6">
+      <div className="px-4 pb-12 space-y-6 max-w-lg mx-auto">
         {/* Name */}
         <div>
           <label className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block">

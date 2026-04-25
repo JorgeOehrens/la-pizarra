@@ -61,7 +61,7 @@ export function CreateTeamForm() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="px-4 py-4 flex items-center justify-between">
+      <header className="px-4 py-4 flex items-center justify-between max-w-lg mx-auto w-full">
         <button
           onClick={() => {
             if (step > 1) setStep(step - 1)
@@ -88,7 +88,7 @@ export function CreateTeamForm() {
         <div className="w-16" />
       </header>
 
-      <div className="flex-1 flex flex-col px-6 pb-12">
+      <div className="flex-1 flex flex-col px-6 pb-12 max-w-lg mx-auto w-full">
         {step === 1 ? (
           <>
             <div className="mb-8 pt-4">
