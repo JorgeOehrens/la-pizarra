@@ -1,0 +1,11 @@
+-- ============================================================
+-- bracket auto-advance:
+--   matches.next_match_id + next_match_slot
+--   propagate_winner_to_next() helper
+--   update_fixture_score / update_fixture call propagate when finalising
+--   link_bracket_matches() RPC for manual wiring
+--   generate_knockout_bracket extended to auto-wire if a successor
+--   knockout stage with the right shape already exists
+--
+-- Canonical bodies live in DB; see migration history.
+-- ============================================================

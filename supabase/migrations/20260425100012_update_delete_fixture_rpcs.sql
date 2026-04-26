@@ -1,0 +1,5 @@
+-- ============================================================
+-- update_fixture: edit metadata of a match (date, teams, venue, stage, status)
+-- delete_fixture: soft delete a match
+-- (canonical bodies live in DB; see migration history)
+-- ============================================================

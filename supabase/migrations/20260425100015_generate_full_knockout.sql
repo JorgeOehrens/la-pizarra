@@ -1,0 +1,5 @@
+-- generate_full_knockout_tournament(season_id, team_ids[], start_date, days_between, starting_sort)
+-- Creates every round of a knockout (Final → Semifinal → Cuartos → Octavos …),
+-- adds placeholder matches per slot, links them via next_match_id/slot, and
+-- populates round 1 with the supplied seeds (1↔N, 2↔N-1, …).
+-- Canonical body in DB; see migration history.

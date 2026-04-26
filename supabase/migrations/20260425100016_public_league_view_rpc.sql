@@ -1,0 +1,5 @@
+-- get_public_league_view(slug, season_id?) — read-only league snapshot
+-- Returns null when league does not exist or visibility is 'private'.
+-- Granted to anon + authenticated. Uses SECURITY DEFINER so it bypasses
+-- per-table RLS while still gating by visibility.
+-- Canonical body in DB.

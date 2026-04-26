@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { track } from "@/lib/analytics"
 
 type MatchType = "friendly" | "league" | "cup" | "tournament"
 
@@ -67,6 +68,21 @@ export async function createMatch(
   if (result?.error === "not_authenticated") return { error: "No autenticado." }
   if (result?.error === "not_admin") return { error: "Solo los administradores pueden crear partidos." }
   if (result?.error) return { error: "Error al guardar el partido." }
+
+  // Track match creation (best-effort).
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  void track(
+    "match_created",
+    {
+      team_id: payload.teamId,
+      match_type: payload.matchType,
+      events: payload.events.length,
+      goals: payload.events.filter((e) => e.event_type === "goal").length,
+    },
+    { distinctId: user?.id },
+  ).catch(() => undefined)
 
   return { matchId: result.match_id! }
 }

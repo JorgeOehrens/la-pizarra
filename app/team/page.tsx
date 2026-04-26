@@ -23,7 +23,7 @@ export default async function TeamPage() {
     .split("T")[0]
 
   // Fetch members + stats + admin data in parallel
-  const [membersResult, statsResult, playerStatsResult, teamDataResult, joinRequestsResult, trainingWeekResult] = await Promise.all([
+  const [membersResult, statsResult, playerStatsResult, teamDataResult, joinRequestsResult, trainingWeekResult, pendingLeagueInvitesResult] = await Promise.all([
     supabase
       .from("team_members")
       .select(`
@@ -67,6 +67,14 @@ export default async function TeamPage() {
           .eq("team_id", team.id)
           .gte("session_date", weekStart)
       : Promise.resolve({ data: [], error: null }),
+
+    features.leagues && isAdmin
+      ? supabase
+          .from("league_teams")
+          .select("id", { count: "exact", head: true })
+          .eq("team_id", team.id)
+          .eq("status", "pending")
+      : Promise.resolve({ count: 0, data: null, error: null }),
   ])
 
   // Build a lookup map for player stats
@@ -130,6 +138,8 @@ export default async function TeamPage() {
     }
   })
 
+  const pendingLeagueInvitesCount = pendingLeagueInvitesResult.count ?? 0
+
   return (
     <AppShell>
       <TeamView
@@ -140,6 +150,7 @@ export default async function TeamPage() {
         joinMode={joinMode}
         joinRequests={joinRequests}
         trainingWeek={trainingWeek}
+        pendingLeagueInvitesCount={pendingLeagueInvitesCount}
       />
     </AppShell>
   )

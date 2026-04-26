@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { track } from '@/lib/analytics'
 
 export async function signup(formData: FormData) {
   const supabase = await createClient()
@@ -40,6 +41,13 @@ export async function signup(formData: FormData) {
   if (!data.session) {
     return { error: 'CONFIRM_EMAIL' }
   }
+
+  // Track signup. Distinct id = auth.user.id from this point on.
+  void track('signup_completed', {
+    method: 'username',
+    has_real_email: email.length > 0,
+    via_invite: Boolean(redirectTo),
+  }, { distinctId: data.user?.id }).catch(() => undefined)
 
   // If coming from an invite link, go there; otherwise go to onboarding hub
   redirect(redirectTo || '/onboarding')

@@ -2,10 +2,11 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { AppShell } from "@/components/app-shell"
 import { getActiveTeamMembership } from "@/lib/team"
-import { ChevronRight, User, LogOut, PlusCircle, Compass, LayoutGrid } from "lucide-react"
+import { ChevronRight, User, LogOut, PlusCircle, Compass, LayoutGrid, Trophy } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { logout } from "@/app/auth/actions"
+import { features } from "@/lib/features"
 
 const POSITION_LABEL: Record<string, string> = {
   goalkeeper: "Portero",
@@ -206,6 +207,19 @@ export default async function ProfilePage() {
             <span className="flex-1 text-sm">Crear nuevo equipo</span>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </Link>
+          {features.leagues && (
+            <Link
+              href="/onboarding/create-league"
+              className="flex items-center gap-4 bg-card rounded-xl p-4 active:scale-[0.98] transition-transform"
+            >
+              <Trophy className="h-5 w-5 text-muted-foreground" />
+              <div className="flex-1">
+                <span className="text-sm block">Crear liga</span>
+                <span className="text-xs text-muted-foreground">Organizar torneo o liga amateur</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+          )}
           <Link
             href="/directory"
             className="flex items-center gap-4 bg-card rounded-xl p-4 active:scale-[0.98] transition-transform"

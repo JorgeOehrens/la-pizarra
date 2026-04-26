@@ -27,11 +27,23 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
   const isAuthPage = pathname.startsWith('/auth')
-  // /join/* is public so unauthenticated users can land on invite links
+  // Marketing surface + auxiliary routes are reachable without a session.
+  // Use an explicit allowlist (rather than a prefix like /para-) so that
+  // future paths cannot leak in by accident.
   const isPublic =
     pathname === '/' ||
+    pathname === '/para-ligas' ||
+    pathname === '/para-equipos' ||
+    pathname === '/para-jugadores' ||
+    pathname === '/precios' ||
+    pathname === '/terminos' ||
+    pathname === '/privacidad' ||
+    pathname === '/blog' ||
+    pathname.startsWith('/blog/') ||
+    pathname.startsWith('/waitlist/') ||
     pathname.startsWith('/auth') ||
-    pathname.startsWith('/join')
+    pathname.startsWith('/join') ||
+    pathname.startsWith('/public')
 
   // Sin sesión → redirigir a login (excepto páginas públicas)
   if (!user && !isPublic) {

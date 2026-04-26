@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { track } from '@/lib/analytics'
 
 function generateSlug(name: string): string {
   const base = name
@@ -65,6 +66,22 @@ export async function createTeam(formData: FormData) {
   if (teamError) {
     return { error: teamError.message }
   }
+
+  // Track team creation. Server callers pass the auth user id explicitly.
+  const teamId = (teamData as { team_id?: string } | string | null)
+  void track(
+    'team_created',
+    {
+      has_logo: Boolean(logoUrl),
+      slug,
+    },
+    {
+      distinctId: user.id,
+    },
+  ).catch(() => undefined)
+
+  // (teamData typing depends on the RPC signature; we don't read it further.)
+  void teamId
 
   redirect('/home')
 }

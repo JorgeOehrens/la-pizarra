@@ -1,0 +1,4 @@
+-- season_top_scorers view: aggregates goals/assists per (season, player).
+-- Filters: status = 'finished', event_type in ('goal','assist'),
+-- m.season_id not null. Joins profile + team for convenience.
+-- Canonical body in DB; see migration history.

@@ -5,6 +5,7 @@ import { StatCard } from "@/components/stat-card"
 import { MatchCard } from "@/components/match-card"
 import { AttendanceWidget } from "@/components/attendance-widget"
 import { getActiveTeamMembership } from "@/lib/team"
+import { features } from "@/lib/features"
 import Image from "next/image"
 import Link from "next/link"
 import {
@@ -16,6 +17,7 @@ import {
   Plus,
   UserPlus,
   MapPin,
+  Trophy,
 } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -180,6 +182,112 @@ export default async function HomePage() {
     recentAttendanceMap[row.match_id] = row.status as "confirmed" | "declined"
   }
 
+  // 4a. Does this team currently participate in any league? (drives the
+  //     "¿Manejas una liga?" push card below).
+  let isInAnyLeague = false
+  if (features.leagues) {
+    const { count: ltCount } = await supabase
+      .from("league_teams")
+      .select("id", { count: "exact", head: true })
+      .eq("team_id", team.id)
+      .eq("status", "active")
+    isInAnyLeague = (ltCount ?? 0) > 0
+  }
+
+  // 4b. Active leagues for this team + next league fixture (if any)
+  type LeagueLite = {
+    id: string
+    slug: string
+    name: string
+    logo_url: string | null
+    primary_color: string
+    secondary_color: string
+  }
+
+  let leagueWidget: {
+    league: LeagueLite
+    fixture: {
+      id: string
+      match_date: string
+      stage_name: string | null
+      opponent_name: string
+      opponent_logo: string | null
+      opponent_primary: string
+      opponent_secondary: string
+      is_home: boolean
+    } | null
+  } | null = null
+
+  if (features.leagues) {
+    const { data: lts } = await supabase
+      .from("league_teams")
+      .select(`
+        league_id,
+        leagues:league_id (
+          id, slug, name, logo_url, primary_color, secondary_color, deleted_at
+        )
+      `)
+      .eq("team_id", team.id)
+      .eq("status", "active")
+
+    type LeagueRow = LeagueLite & { deleted_at: string | null }
+    const leagues = ((lts ?? []) as Array<{ leagues: LeagueRow | LeagueRow[] | null }>)
+      .map((row) => (Array.isArray(row.leagues) ? row.leagues[0] : row.leagues))
+      .filter((l): l is LeagueRow => Boolean(l) && !l!.deleted_at)
+      .map((l) => ({ id: l.id, slug: l.slug, name: l.name, logo_url: l.logo_url, primary_color: l.primary_color, secondary_color: l.secondary_color }))
+
+    if (leagues.length > 0) {
+      const primaryLeague = leagues[0]
+      // Fetch fixtures of the primary league and pick our next one.
+      const { data: fixtureRows } = await supabase.rpc("list_league_fixtures", {
+        p_league_id: primaryLeague.id,
+        p_season_id: null,
+      })
+
+      type FixtureRow = {
+        id: string
+        match_date: string
+        status: string
+        stage_name: string | null
+        home_id: string | null
+        home_name: string | null
+        home_logo: string | null
+        home_primary: string | null
+        home_secondary: string | null
+        away_id: string | null
+        away_name: string | null
+        away_logo: string | null
+        away_primary: string | null
+        away_secondary: string | null
+      }
+
+      const fixtures = ((fixtureRows ?? []) as FixtureRow[])
+        .filter(
+          (f) =>
+            (f.home_id === team.id || f.away_id === team.id) &&
+            f.status === "scheduled",
+        )
+        .sort((a, b) => new Date(a.match_date).getTime() - new Date(b.match_date).getTime())
+
+      const next = fixtures[0]
+      leagueWidget = {
+        league: primaryLeague,
+        fixture: next
+          ? {
+              id: next.id,
+              match_date: next.match_date,
+              stage_name: next.stage_name,
+              is_home: next.home_id === team.id,
+              opponent_name: next.home_id === team.id ? (next.away_name ?? "") : (next.home_name ?? ""),
+              opponent_logo: next.home_id === team.id ? next.away_logo : next.home_logo,
+              opponent_primary: (next.home_id === team.id ? next.away_primary : next.home_primary) ?? "#D7FF00",
+              opponent_secondary: (next.home_id === team.id ? next.away_secondary : next.home_secondary) ?? "#000",
+            }
+          : null,
+      }
+    }
+  }
+
   // 5. Derived values
   const isEmpty = stats.matches_played === 0 && !nextMatch
 
@@ -247,6 +355,30 @@ export default async function HomePage() {
           </Link>
         </header>
 
+        {/* ── League widget (if team participates in a league) ── */}
+        {leagueWidget && <LeagueWidget data={leagueWidget} />}
+
+        {/* ── Push: "¿Manejas una liga?" (only if no league for this team) ── */}
+        {features.leagues && !isInAnyLeague && !leagueWidget && (
+          <Link
+            href="/para-ligas#waitlist"
+            className="block bg-card border border-dashed border-border/60 rounded-xl p-4 mb-5 hover:border-accent/40 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-accent/15 flex items-center justify-center shrink-0">
+                <Trophy className="h-5 w-5 text-accent" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">¿Manejas una liga amateur?</p>
+                <p className="text-xs text-muted-foreground">
+                  Anótate al waitlist Pro Liga.
+                </p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+            </div>
+          </Link>
+        )}
+
         {/* ── ZONA CERO ── */}
         {isEmpty ? (
           <ZonaCero teamName={team.name} />
@@ -264,6 +396,93 @@ export default async function HomePage() {
         )}
       </div>
     </AppShell>
+  )
+}
+
+// ─── League widget (next league match) ────────────────────────────────────
+
+function LeagueWidget({
+  data,
+}: {
+  data: {
+    league: { id: string; slug: string; name: string; logo_url: string | null; primary_color: string; secondary_color: string }
+    fixture: {
+      id: string
+      match_date: string
+      stage_name: string | null
+      opponent_name: string
+      opponent_logo: string | null
+      opponent_primary: string
+      opponent_secondary: string
+      is_home: boolean
+    } | null
+  }
+}) {
+  const { league, fixture } = data
+  return (
+    <Link
+      href={`/team/leagues/${league.slug}`}
+      className="block bg-card rounded-xl p-4 border border-border/40 hover:border-border mb-5"
+    >
+      <div className="flex items-center gap-3">
+        {league.logo_url ? (
+          <Image
+            src={league.logo_url}
+            alt={league.name}
+            width={36}
+            height={36}
+            className="rounded-lg shrink-0 object-cover"
+          />
+        ) : (
+          <div
+            className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+            style={{ backgroundColor: league.primary_color || "#D7FF00", color: league.secondary_color || "#000" }}
+          >
+            <Trophy className="h-4 w-4" />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Mi liga</p>
+          <p className="font-medium text-sm truncate">{league.name}</p>
+        </div>
+        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+      </div>
+
+      {fixture && (
+        <div className="mt-3 pt-3 border-t border-border/40">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+              {format(new Date(fixture.match_date), "EEEE d MMM · HH:mm", { locale: es })}
+            </span>
+            {fixture.stage_name && (
+              <span className="text-[10px] uppercase tracking-widest text-accent">{fixture.stage_name}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-3 py-1">
+            <span className="text-sm font-medium">{fixture.is_home ? "Local" : "Visitante"}</span>
+            <span className="text-xs text-muted-foreground uppercase">vs</span>
+            <div className="flex-1 flex items-center gap-2 justify-end min-w-0">
+              {fixture.opponent_logo ? (
+                <Image src={fixture.opponent_logo} alt={fixture.opponent_name} width={20} height={20} className="rounded shrink-0 object-cover" />
+              ) : (
+                <div
+                  className="w-5 h-5 rounded flex items-center justify-center text-[9px] font-display shrink-0"
+                  style={{ backgroundColor: fixture.opponent_primary, color: fixture.opponent_secondary }}
+                >
+                  {fixture.opponent_name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <span className="text-sm font-medium truncate">{fixture.opponent_name}</span>
+            </div>
+          </div>
+        </div>
+      )}
+      {!fixture && (
+        <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border/40">
+          Sin próximos partidos. Tocá para ver el calendario.
+        </p>
+      )}
+    </Link>
   )
 }
 

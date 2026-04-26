@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { Users, Plus } from "lucide-react"
+import { Users, Plus, Trophy } from "lucide-react"
+import { features } from "@/lib/features"
 
 export default async function OnboardingPage() {
   const supabase = await createClient()
@@ -65,6 +66,24 @@ export default async function OnboardingPage() {
               <p className="text-sm text-muted-foreground">Tengo un link o código</p>
             </div>
           </Link>
+
+          {/* Create league (feature flag) */}
+          {features.leagues && (
+            <Link
+              href="/onboarding/create-league"
+              className="flex items-center gap-5 w-full bg-card border border-border/40 rounded-2xl p-6 active:scale-[0.98] transition-transform"
+            >
+              <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center shrink-0">
+                <Trophy className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div>
+                <h2 className="font-display text-xl uppercase tracking-tight">
+                  Crear liga
+                </h2>
+                <p className="text-sm text-muted-foreground">Soy organizador/a</p>
+              </div>
+            </Link>
+          )}
         </div>
       </div>
     </div>

@@ -4,7 +4,7 @@ import { useState, useTransition } from "react"
 import { PerformanceRing } from "@/components/performance-ring"
 import { PlayerCard } from "@/components/player-card"
 import { AddPlayerSheet } from "@/components/add-player-sheet"
-import { Plus, Settings, Shield, Globe, Lock, UserCheck, CheckCircle2, XCircle, Dumbbell } from "lucide-react"
+import { Plus, Settings, Shield, Globe, Lock, UserCheck, CheckCircle2, XCircle, Dumbbell, Trophy } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { updateJoinMode, approveJoinRequest, rejectJoinRequest } from "./actions"
@@ -78,6 +78,7 @@ export function TeamView({
   joinMode,
   joinRequests,
   trainingWeek = [],
+  pendingLeagueInvitesCount = 0,
 }: {
   team: Team
   members: MemberWithStats[]
@@ -86,6 +87,7 @@ export function TeamView({
   joinMode: "open" | "request" | "invite_only"
   joinRequests: JoinRequest[]
   trainingWeek?: TrainingWeekEntry[]
+  pendingLeagueInvitesCount?: number
 }) {
   const [activeTab, setActiveTab] = useState<"stats" | "lineup" | "admin">("stats")
   const [activePosition, setActivePosition] = useState<string | null>(null)
@@ -178,6 +180,7 @@ export function TeamView({
             teamId={team.id}
             joinMode={currentJoinMode}
             requests={pendingRequests}
+            pendingLeagueInvites={pendingLeagueInvitesCount}
             onModeChange={(mode) => {
               setCurrentJoinMode(mode)
               startTransition(async () => { await updateJoinMode(team.id, mode) })
@@ -550,6 +553,7 @@ function AdminTab({
   teamId: _teamId,
   joinMode,
   requests,
+  pendingLeagueInvites = 0,
   onModeChange,
   onApprove,
   onReject,
@@ -557,12 +561,38 @@ function AdminTab({
   teamId: string
   joinMode: "open" | "request" | "invite_only"
   requests: JoinRequest[]
+  pendingLeagueInvites?: number
   onModeChange: (mode: "open" | "request" | "invite_only") => void
   onApprove: (req: JoinRequest) => void
   onReject: (req: JoinRequest) => void
 }) {
   return (
     <div className="space-y-5 pb-6">
+      {/* Leagues entry (feature flagged) */}
+      {features.leagues && (
+        <Link
+          href="/team/leagues"
+          className="flex items-center gap-3 bg-card rounded-xl p-4 border border-border/40 hover:border-border relative"
+        >
+          <div className="w-10 h-10 rounded-lg bg-accent/15 flex items-center justify-center shrink-0">
+            <Trophy className="h-5 w-5 text-accent" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium">Ligas</p>
+            <p className="text-xs text-muted-foreground">
+              {pendingLeagueInvites > 0
+                ? `${pendingLeagueInvites} invitación${pendingLeagueInvites === 1 ? '' : 'es'} pendiente${pendingLeagueInvites === 1 ? '' : 's'}`
+                : 'Gestionar participaciones e invitaciones'}
+            </p>
+          </div>
+          {pendingLeagueInvites > 0 && (
+            <span className="absolute top-2 right-2 inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
+              {pendingLeagueInvites}
+            </span>
+          )}
+        </Link>
+      )}
+
       {/* Join mode */}
       <section>
         <h2 className="font-display text-lg mb-1">Modo de acceso</h2>

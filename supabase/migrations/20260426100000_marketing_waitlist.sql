@@ -1,0 +1,8 @@
+-- ============================================================
+-- Marketing waitlist — V1 validation surface.
+-- Captures intent for /para-ligas, /para-equipos, /para-jugadores
+-- and the general newsletter (landing + /precios + /blog).
+-- INSERT/UPDATE only via SECURITY DEFINER RPCs (anon-callable).
+-- SELECT denied at policy level — review goes through SQL.
+-- Canonical body lives in DB.
+-- ============================================================
