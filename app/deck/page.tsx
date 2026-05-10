@@ -19,55 +19,23 @@ import {
 } from 'lucide-react'
 import { DownloadDeckButton } from './download-button'
 
+// Direct browser printing of /deck is intentionally disabled — the
+// content is sized for a wide screen and gets clipped on A4. The
+// canonical PDF view lives at /deck/print, which uses fixed mm-based
+// page sizing for guaranteed fit. The download button opens that page.
 const PRINT_STYLES = `
 @media print {
-  @page {
-    size: A4 landscape;
-    margin: 0;
-  }
-
-  html, body {
-    background: #0a0a0a !important;
-    color: #ffffff !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  .no-print {
-    display: none !important;
-  }
-
-  .deck-slide {
-    page-break-after: always;
-    page-break-inside: avoid;
-    min-height: auto !important;
-    height: 100vh;
-    padding: 1.4cm 2cm !important;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    box-sizing: border-box;
-  }
-
-  .deck-slide:last-of-type {
-    page-break-after: auto;
-  }
-
-  /* Hide footnote anchor underlines in print */
-  .deck-slide a {
-    color: inherit !important;
-    text-decoration: none !important;
-  }
-
-  /* Sources keep their own page */
-  .deck-sources {
-    page-break-before: always;
-    padding: 1.4cm 2cm !important;
-  }
-
-  /* Container resets so flex centering still works on print page size */
-  .deck-root, .deck-root > div, .deck-root section {
-    max-width: none !important;
+  @page { size: A4 landscape; margin: 1cm; }
+  body * { visibility: hidden; }
+  body::before {
+    content: 'Para descargar el PDF: visitá /deck/print o tocá el botón "Descargar PDF" en el deck.';
+    visibility: visible;
+    display: block;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 12pt;
+    color: #000;
+    padding: 4cm;
+    text-align: center;
   }
 }
 `
