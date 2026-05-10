@@ -18,6 +18,10 @@ import {
   Wallet,
 } from 'lucide-react'
 import { DownloadDeckButton } from './download-button'
+import { MockStandings } from '@/components/marketing/mock-standings'
+import { MockBracket } from '@/components/marketing/mock-bracket'
+import { MockFixture } from '@/components/marketing/mock-fixture'
+import { MockPlayerStats } from '@/components/marketing/mock-player-stats'
 
 // Direct browser printing of /deck is intentionally disabled — the
 // content is sized for a wide screen and gets clipped on A4. The
@@ -131,7 +135,7 @@ function SlideTag({ index, total, eyebrow }: { index: number; total: number; eye
   )
 }
 
-const TOTAL = 8
+const TOTAL = 10
 
 export default function DeckPage() {
   return (
@@ -417,9 +421,106 @@ export default function DeckPage() {
 
       <div className="no-print border-t border-border/30" />
 
-      {/* SLIDE 05 — Pricing & Unit Economics */}
+      {/* SLIDE 05 — Producto · Equipo & Jugador */}
       <section className="deck-slide min-h-[92vh] flex flex-col justify-center px-4 md:px-6 py-20 md:py-28 max-w-6xl mx-auto">
-        <SlideTag index={5} total={TOTAL} eyebrow="Pricing & Unit Economics" />
+        <SlideTag index={5} total={TOTAL} eyebrow="Producto · equipo & jugador" />
+        <h2 className="font-display text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight max-w-4xl">
+          La carrera del jugador,<br />
+          <span className="text-accent">guardada en serio.</span>
+        </h2>
+        <p className="mt-8 text-lg md:text-xl text-white/65 max-w-3xl leading-relaxed">
+          El equipo carga partidos en segundos. Cada jugador acumula goles,
+          asistencias y asistencia que viajan con él entre temporadas y
+          equipos.
+        </p>
+
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+          <div>
+            <h3 className="font-display text-2xl md:text-3xl mb-4">
+              Equipo · plantilla viva
+            </h3>
+            <p className="text-sm md:text-base text-white/65 mb-5 leading-relaxed">
+              Un capitán arma el equipo, invita por link sin pedir email a los
+              jugadores, y empieza a registrar partidos el mismo día.
+            </p>
+            <ul className="space-y-2 text-sm text-white/75">
+              <li className="flex gap-2">
+                <Check className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+                <span>Plantilla con foto, dorsal y posición.</span>
+              </li>
+              <li className="flex gap-2">
+                <Check className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+                <span>Goles, asistencias, autogoles, amarillas y rojas por minuto.</span>
+              </li>
+              <li className="flex gap-2">
+                <Check className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+                <span>Asistencia confirmada por jugador en cada partido.</span>
+              </li>
+              <li className="flex gap-2">
+                <Check className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+                <span>Finanzas del equipo: cobros con distribución automática.</span>
+              </li>
+            </ul>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.22em] text-accent mb-2">
+                Mi carrera · ejemplo en vivo
+              </p>
+              <MockPlayerStats />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.22em] text-accent mb-2">
+                Próximo partido
+              </p>
+              <MockFixture />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="no-print border-t border-border/30" />
+
+      {/* SLIDE 06 — Producto · Liga */}
+      <section className="deck-slide min-h-[92vh] flex flex-col justify-center px-4 md:px-6 py-20 md:py-28 max-w-6xl mx-auto">
+        <SlideTag index={6} total={TOTAL} eyebrow="Producto · liga" />
+        <h2 className="font-display text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight max-w-4xl">
+          La liga, sin Excel<br />
+          <span className="text-white/40">y sin grupos paralelos.</span>
+        </h2>
+        <p className="mt-8 text-lg md:text-xl text-white/65 max-w-3xl leading-relaxed">
+          La tabla y el bracket se calculan solos cada vez que un equipo
+          cierra un partido. La vista pública es un link compartible — sin
+          login, sin instalar nada.
+        </p>
+
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.22em] text-accent mb-3">
+              Tabla en vivo
+            </p>
+            <MockStandings />
+            <p className="mt-3 text-xs text-white/50 leading-relaxed">
+              Calculada con cada partido finalizado. PJ, PG, PE, PP, GF, GC, DG, PTS.
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.22em] text-accent mb-3">
+              Llave eliminatoria
+            </p>
+            <MockBracket />
+            <p className="mt-3 text-xs text-white/50 leading-relaxed">
+              Octavos, cuartos, semis y final. Avanzan solos según los resultados.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <div className="no-print border-t border-border/30" />
+
+      {/* SLIDE 07 — Pricing & Unit Economics */}
+      <section className="deck-slide min-h-[92vh] flex flex-col justify-center px-4 md:px-6 py-20 md:py-28 max-w-6xl mx-auto">
+        <SlideTag index={7} total={TOTAL} eyebrow="Pricing & Unit Economics" />
         <h2 className="font-display text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight max-w-4xl">
           ARPU US$700.<br />
           <span className="text-accent">CAC bajo, margen alto.</span>
@@ -503,9 +604,9 @@ export default function DeckPage() {
 
       <div className="no-print border-t border-border/30" />
 
-      {/* SLIDE 06 — GTM */}
+      {/* SLIDE 08 — GTM */}
       <section className="deck-slide min-h-[92vh] flex flex-col justify-center px-4 md:px-6 py-20 md:py-28 max-w-6xl mx-auto">
-        <SlideTag index={6} total={TOTAL} eyebrow="Go-to-Market" />
+        <SlideTag index={8} total={TOTAL} eyebrow="Go-to-Market" />
         <h2 className="font-display text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight max-w-4xl">
           SEO. Instagram.<br />
           <span className="text-accent">Marketing por país.</span>
@@ -642,9 +743,9 @@ export default function DeckPage() {
 
       <div className="no-print border-t border-border/30" />
 
-      {/* SLIDE 07 — Comps & Why now */}
+      {/* SLIDE 09 — Comps & Why now */}
       <section className="deck-slide min-h-[92vh] flex flex-col justify-center px-4 md:px-6 py-20 md:py-28 max-w-6xl mx-auto">
-        <SlideTag index={7} total={TOTAL} eyebrow="Comparables · Why now" />
+        <SlideTag index={9} total={TOTAL} eyebrow="Comparables · Why now" />
         <h2 className="font-display text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight max-w-4xl">
           TeamSnap: 15M usuarios.<br />
           <span className="text-white/40">LATAM no tiene su versión.</span>
@@ -740,9 +841,9 @@ export default function DeckPage() {
 
       <div className="no-print border-t border-border/30" />
 
-      {/* SLIDE 08 — Plan */}
+      {/* SLIDE 10 — Plan */}
       <section className="deck-slide min-h-[92vh] flex flex-col justify-center px-4 md:px-6 py-20 md:py-28 max-w-6xl mx-auto">
-        <SlideTag index={8} total={TOTAL} eyebrow="El plan · 100K ligas" />
+        <SlideTag index={10} total={TOTAL} eyebrow="El plan · 100K ligas" />
         <h2 className="font-display text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight max-w-4xl">
           100.000 ligas.<br />
           <span className="text-accent">5 años.</span>
