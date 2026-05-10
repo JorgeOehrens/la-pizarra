@@ -25,6 +25,7 @@ import { CTASection } from '@/components/marketing/cta-section'
 import { MockFixture } from '@/components/marketing/mock-fixture'
 import { MockStandings } from '@/components/marketing/mock-standings'
 import { MockBracket } from '@/components/marketing/mock-bracket'
+import { HeroAppDemo } from '@/components/marketing/hero-app-demo'
 import { WaitlistForm } from '@/components/marketing/waitlist-form'
 
 export const metadata: Metadata = {
@@ -52,6 +53,7 @@ export default async function LandingPage() {
         primary={{ href: '/onboarding/create-team', label: 'Crear equipo' }}
         secondary={{ href: '/auth/login', label: 'Iniciar sesión' }}
         textLink={{ href: '/onboarding/join-team', label: 'Tengo un código de invitación' }}
+        demo={<HeroAppDemo />}
       />
 
       <div className="max-w-5xl mx-auto px-4">

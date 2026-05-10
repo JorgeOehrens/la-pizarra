@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { WaitlistForm } from './waitlist-form'
@@ -14,6 +15,7 @@ export function MarketingHero({
   textLink,
   size = 'standard',
   waitlist,
+  demo,
 }: {
   eyebrow: string
   titleTop: string
@@ -24,6 +26,7 @@ export function MarketingHero({
   textLink?: CTA
   size?: 'tall' | 'standard'
   waitlist?: { audience: 'ligas' | 'equipos' | 'jugadores' | 'general'; source: string; placeholder?: string }
+  demo?: ReactNode
 }) {
   return (
     <section
@@ -48,67 +51,84 @@ export function MarketingHero({
 
       <div
         className={cn(
-          'relative z-10 max-w-5xl mx-auto px-6 flex flex-col',
+          'relative z-10 mx-auto px-6 flex flex-col',
+          demo ? 'max-w-6xl' : 'max-w-5xl',
           size === 'tall' ? 'pt-24 md:pt-28 pb-12' : 'pt-20 md:pt-24 pb-12',
         )}
       >
-        <p className="text-[11px] uppercase tracking-[0.18em] text-white/30 font-sans mb-4">
-          {eyebrow}
-        </p>
-        <h1 className="font-display text-[64px] md:text-[96px] leading-none text-white">
-          {titleTop}
-        </h1>
-        <h1 className="font-display text-[64px] md:text-[96px] leading-none text-[#D7FF00] -mt-2">
-          {titleBottomAccent}
-        </h1>
-        <div className="h-0.5 w-12 bg-[#D7FF00] mt-5 mb-6" />
-        {subtitle && (
-          <p className="text-white/50 text-base md:text-lg leading-relaxed max-w-[320px] md:max-w-[480px] font-sans mb-10">
-            {subtitle}
-          </p>
-        )}
+        <div
+          className={cn(
+            demo
+              ? 'grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-12 md:gap-10 lg:gap-16 items-center'
+              : 'flex flex-col',
+          )}
+        >
+          <div className="flex flex-col">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-white/30 font-sans mb-4">
+              {eyebrow}
+            </p>
+            <h1 className="font-display text-[64px] md:text-[96px] leading-none text-white">
+              {titleTop}
+            </h1>
+            <h1 className="font-display text-[64px] md:text-[96px] leading-none text-[#D7FF00] -mt-2">
+              {titleBottomAccent}
+            </h1>
+            <div className="h-0.5 w-12 bg-[#D7FF00] mt-5 mb-6" />
+            {subtitle && (
+              <p className="text-white/50 text-base md:text-lg leading-relaxed max-w-[320px] md:max-w-[480px] font-sans mb-10">
+                {subtitle}
+              </p>
+            )}
 
-        <div className="flex flex-col md:flex-row gap-3 max-w-md md:max-w-2xl">
-          <Link
-            href={primary.href}
-            className="flex items-center justify-center w-full md:w-auto md:px-8 bg-[#D7FF00] text-black py-[17px] rounded-xl font-display text-xl uppercase tracking-wide hover:bg-[#BFE600] active:scale-[0.98] transition-all"
-          >
-            {primary.label}
-          </Link>
-          {secondary && (
-            <Link
-              href={secondary.href}
-              className="flex items-center justify-center w-full md:w-auto md:px-8 border border-white/15 text-white py-[17px] rounded-xl font-display text-xl uppercase tracking-wide hover:border-white/30 hover:text-white active:scale-[0.98] transition-all"
-            >
-              {secondary.label}
-            </Link>
+            <div className="flex flex-col md:flex-row gap-3 max-w-md md:max-w-2xl">
+              <Link
+                href={primary.href}
+                className="flex items-center justify-center w-full md:w-auto md:px-8 bg-[#D7FF00] text-black py-[17px] rounded-xl font-display text-xl uppercase tracking-wide hover:bg-[#BFE600] active:scale-[0.98] transition-all"
+              >
+                {primary.label}
+              </Link>
+              {secondary && (
+                <Link
+                  href={secondary.href}
+                  className="flex items-center justify-center w-full md:w-auto md:px-8 border border-white/15 text-white py-[17px] rounded-xl font-display text-xl uppercase tracking-wide hover:border-white/30 hover:text-white active:scale-[0.98] transition-all"
+                >
+                  {secondary.label}
+                </Link>
+              )}
+            </div>
+
+            {textLink && (
+              <div className="pt-5">
+                <Link
+                  href={textLink.href}
+                  className="text-sm text-white/30 hover:text-white/60 transition-colors font-sans"
+                >
+                  {textLink.label} →
+                </Link>
+              </div>
+            )}
+
+            {waitlist && (
+              <div className="mt-10 max-w-md">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 mb-2">
+                  Anótate al boletín
+                </p>
+                <WaitlistForm
+                  audience={waitlist.audience}
+                  source={waitlist.source}
+                  placeholder={waitlist.placeholder}
+                  compact
+                />
+              </div>
+            )}
+          </div>
+
+          {demo && (
+            <div className="md:justify-self-end w-full md:w-auto">
+              {demo}
+            </div>
           )}
         </div>
-
-        {textLink && (
-          <div className="pt-5">
-            <Link
-              href={textLink.href}
-              className="text-sm text-white/30 hover:text-white/60 transition-colors font-sans"
-            >
-              {textLink.label} →
-            </Link>
-          </div>
-        )}
-
-        {waitlist && (
-          <div className="mt-10 max-w-md">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 mb-2">
-              Anótate al boletín
-            </p>
-            <WaitlistForm
-              audience={waitlist.audience}
-              source={waitlist.source}
-              placeholder={waitlist.placeholder}
-              compact
-            />
-          </div>
-        )}
       </div>
     </section>
   )
