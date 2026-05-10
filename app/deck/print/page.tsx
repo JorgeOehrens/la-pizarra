@@ -1,5 +1,9 @@
 import Link from 'next/link'
 import { ChevronLeft, Check } from 'lucide-react'
+import { MockStandings } from '@/components/marketing/mock-standings'
+import { MockBracket } from '@/components/marketing/mock-bracket'
+import { MockFixture } from '@/components/marketing/mock-fixture'
+import { MockPlayerStats } from '@/components/marketing/mock-player-stats'
 import {
   DECK_SOURCES,
   DECK_HEADLINE_STATS,
@@ -12,7 +16,7 @@ import {
   DECK_PLAN,
 } from '@/lib/deck/data'
 
-const TOTAL_PAGES = 13
+const TOTAL_PAGES = 15
 
 const PRINT_CSS = `
 :root {
@@ -176,6 +180,22 @@ const PRINT_CSS = `
 .closing-band .lbl { font-size: 7pt; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(0,0,0,0.6); margin-bottom: 3mm; }
 .closing-band p { font-family: "Bebas Neue", "Oswald", sans-serif; font-size: 16pt; line-height: 1.2; max-width: 240mm; }
 
+.product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; margin-top: 6mm; flex: 1; min-height: 0; }
+.product-cell { display: flex; flex-direction: column; gap: 2mm; min-height: 0; }
+.product-cell .label { font-size: 7pt; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); }
+.product-cell .desc { font-size: 8.5pt; color: var(--muted); line-height: 1.4; margin-bottom: 1mm; }
+.product-cell .mock-wrap { flex: 1; min-height: 0; display: flex; align-items: flex-start; transform-origin: top left; }
+.product-cell .mock-wrap > * { width: 100%; }
+
+.product-hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 8mm; margin-top: 4mm; flex: 1; min-height: 0; }
+.product-hero .copy h3 { font-family: "Bebas Neue", "Oswald", sans-serif; font-size: 17pt; line-height: 1.1; margin-bottom: 3mm; }
+.product-hero .copy p { font-size: 9.5pt; color: var(--muted); line-height: 1.5; margin-bottom: 4mm; }
+.product-hero .copy ul { list-style: none; margin: 0; padding: 0; }
+.product-hero .copy li { font-size: 9pt; color: var(--muted); padding: 1mm 0; line-height: 1.4; display: flex; gap: 2mm; }
+.product-hero .copy li::before { content: "✓"; color: var(--accent); flex-shrink: 0; font-weight: bold; }
+.product-hero .visual { display: flex; flex-direction: column; gap: 4mm; min-height: 0; justify-content: center; }
+.product-hero .visual .label { font-size: 7pt; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); }
+
 .sources-list { margin-top: 6mm; columns: 2; column-gap: 12mm; }
 .sources-list li { font-size: 8.5pt; color: var(--muted); padding: 1.5mm 0; break-inside: avoid; line-height: 1.5; display: flex; gap: 3mm; }
 .sources-list li .n { font-family: "Bebas Neue", "Oswald", sans-serif; color: var(--accent); width: 6mm; flex-shrink: 0; }
@@ -262,7 +282,7 @@ export default function DeckPrintPage() {
         <Link href="/deck" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#fff', textDecoration: 'none' }}>
           <ChevronLeft size={14} /> Volver al deck
         </Link>
-        <span>Versión PDF · A4 landscape · 13 páginas</span>
+        <span>Versión PDF · A4 landscape · 15 páginas</span>
         <span style={{ color: 'var(--accent)' }}>Cmd/Ctrl + P para reimprimir</span>
       </div>
 
@@ -399,9 +419,74 @@ export default function DeckPrintPage() {
         <PageNum n={5} />
       </div>
 
-      {/* PAGE 6 — Pricing metrics */}
+      {/* PAGE 6 — Producto · Equipo & Jugador */}
       <div className="print-page">
-        <PageMeta label="Pricing & Unit Economics" n={6} />
+        <PageMeta label="Producto · equipo & jugador" n={6} />
+        <div className="page-body">
+          <h2 className="h2">
+            La carrera del jugador,<br />
+            <span style={{ color: 'var(--accent)' }}>guardada en serio.</span>
+          </h2>
+          <p className="lead">
+            El equipo carga partidos en segundos. Cada jugador acumula goles,
+            asistencias y asistencia que viajan con él entre temporadas y
+            equipos.
+          </p>
+          <div className="product-hero">
+            <div className="copy">
+              <h3>Equipo · plantilla viva</h3>
+              <p>
+                Un capitán arma el equipo, invita por link sin pedir email a los
+                jugadores, y empieza a registrar partidos el mismo día.
+              </p>
+              <ul>
+                <li>Plantilla con foto, dorsal y posición</li>
+                <li>Goles, asistencias, autogoles, amarillas y rojas por minuto</li>
+                <li>Asistencia confirmada por jugador en cada partido</li>
+                <li>Finanzas del equipo: cobros con distribución automática</li>
+              </ul>
+            </div>
+            <div className="visual">
+              <p className="label">Mi carrera · MockPlayerStats</p>
+              <MockPlayerStats />
+              <p className="label" style={{ marginTop: '1mm' }}>Próximo partido</p>
+              <MockFixture />
+            </div>
+          </div>
+        </div>
+        <PageNum n={6} />
+      </div>
+
+      {/* PAGE 7 — Producto · Liga */}
+      <div className="print-page">
+        <PageMeta label="Producto · liga" n={7} />
+        <div className="page-body">
+          <h2 className="h2">
+            La liga, sin Excel<br />
+            <span className="muted">y sin grupos de WhatsApp paralelos.</span>
+          </h2>
+          <p className="lead">
+            La tabla y el bracket se calculan solos cada vez que un equipo
+            cierra un partido. La vista pública es un link compartible —
+            sin login, sin instalar nada.
+          </p>
+          <div className="product-hero">
+            <div className="visual">
+              <p className="label">Tabla en vivo</p>
+              <MockStandings />
+            </div>
+            <div className="visual">
+              <p className="label">Llave eliminatoria</p>
+              <MockBracket />
+            </div>
+          </div>
+        </div>
+        <PageNum n={7} />
+      </div>
+
+      {/* PAGE 8 — Pricing metrics */}
+      <div className="print-page">
+        <PageMeta label="Pricing & Unit Economics" n={8} />
         <div className="page-body">
           <h2 className="h2">
             {DECK_PRICING.title}<br />
@@ -418,12 +503,12 @@ export default function DeckPrintPage() {
             ))}
           </div>
         </div>
-        <PageNum n={6} />
+        <PageNum n={8} />
       </div>
 
       {/* PAGE 7 — Pricing table */}
       <div className="print-page">
-        <PageMeta label="Pricing · tabla detallada" n={7} />
+        <PageMeta label="Pricing · tabla detallada" n={9} />
         <div className="page-body">
           <h2 className="h2">El detalle por plan.</h2>
           <p className="lead">Mix proyectado al milestone de 100K ligas. Conversiones referenciales — el ARPU absoluto se ajusta por país.</p>
@@ -449,12 +534,12 @@ export default function DeckPrintPage() {
           </table>
           <p className="foot">{DECK_PRICING.footnote}</p>
         </div>
-        <PageNum n={7} />
+        <PageNum n={9} />
       </div>
 
       {/* PAGE 8 — GTM channels */}
       <div className="print-page">
-        <PageMeta label="Go-to-Market · canales" n={8} />
+        <PageMeta label="Go-to-Market · canales" n={10} />
         <div className="page-body">
           <h2 className="h2">
             {DECK_GTM.title}<br />
@@ -474,12 +559,12 @@ export default function DeckPrintPage() {
             ))}
           </div>
         </div>
-        <PageNum n={8} />
+        <PageNum n={10} />
       </div>
 
       {/* PAGE 9 — GTM funnel */}
       <div className="print-page">
-        <PageMeta label="Go-to-Market · funnel orgánico" n={9} />
+        <PageMeta label="Go-to-Market · funnel orgánico" n={11} />
         <div className="page-body">
           <h2 className="h2">
             Del equipo gratis<br />
@@ -496,12 +581,12 @@ export default function DeckPrintPage() {
             ))}
           </div>
         </div>
-        <PageNum n={9} />
+        <PageNum n={11} />
       </div>
 
       {/* PAGE 10 — Comparables */}
       <div className="print-page">
-        <PageMeta label="Comparables" n={10} />
+        <PageMeta label="Comparables" n={12} />
         <div className="page-body">
           <h2 className="h2">
             {DECK_COMPS.title}<br />
@@ -518,12 +603,12 @@ export default function DeckPrintPage() {
             ))}
           </div>
         </div>
-        <PageNum n={10} />
+        <PageNum n={12} />
       </div>
 
       {/* PAGE 11 — Why now */}
       <div className="print-page">
-        <PageMeta label="Why now" n={11} />
+        <PageMeta label="Why now" n={13} />
         <div className="page-body">
           <h2 className="h2">Las cuatro razones de timing.</h2>
           <p className="lead">El producto ya no requiere apuestas tecnológicas: cada componente clave está commoditizado en 2026. La oportunidad es de ejecución y distribución.</p>
@@ -536,12 +621,12 @@ export default function DeckPrintPage() {
             ))}
           </div>
         </div>
-        <PageNum n={11} />
+        <PageNum n={13} />
       </div>
 
       {/* PAGE 12 — Plan */}
       <div className="print-page">
-        <PageMeta label="El plan · 100K ligas" n={12} />
+        <PageMeta label="El plan · 100K ligas" n={14} />
         <div className="page-body">
           <h2 className="h2">
             {DECK_PLAN.title}<br />
@@ -560,12 +645,12 @@ export default function DeckPrintPage() {
             ))}
           </div>
         </div>
-        <PageNum n={12} />
+        <PageNum n={14} />
       </div>
 
       {/* PAGE 13 — Sources */}
       <div className="print-page">
-        <PageMeta label="Fuentes" n={13} />
+        <PageMeta label="Fuentes" n={15} />
         <div className="page-body">
           <h2 className="h2">Fuentes & disclaimer.</h2>
           <ol className="sources-list">
@@ -580,7 +665,7 @@ export default function DeckPrintPage() {
             Cifras de TAM/SAM y proyecciones provienen de reportes de terceros (IMARC, FutureData, Statista, FIFA Big Count, asociaciones nacionales). Las proyecciones internas (mix de planes, ARR target, CAC) son asunciones del equipo, ajustables conforme avancen los pilotos. Documento interno — no para distribución pública.
           </p>
         </div>
-        <PageNum n={13} />
+        <PageNum n={15} />
       </div>
     </div>
   )
