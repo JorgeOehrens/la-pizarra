@@ -17,6 +17,60 @@ import {
   Users,
   Wallet,
 } from 'lucide-react'
+import { DownloadDeckButton } from './download-button'
+
+const PRINT_STYLES = `
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+
+  html, body {
+    background: #0a0a0a !important;
+    color: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .deck-slide {
+    page-break-after: always;
+    page-break-inside: avoid;
+    min-height: auto !important;
+    height: 100vh;
+    padding: 1.4cm 2cm !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  .deck-slide:last-of-type {
+    page-break-after: auto;
+  }
+
+  /* Hide footnote anchor underlines in print */
+  .deck-slide a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+
+  /* Sources keep their own page */
+  .deck-sources {
+    page-break-before: always;
+    padding: 1.4cm 2cm !important;
+  }
+
+  /* Container resets so flex centering still works on print page size */
+  .deck-root, .deck-root > div, .deck-root section {
+    max-width: none !important;
+  }
+}
+`
 
 const SOURCES = [
   {
@@ -113,29 +167,34 @@ const TOTAL = 8
 
 export default function DeckPage() {
   return (
-    <div className="min-h-screen bg-background text-white">
+    <div className="deck-root min-h-screen bg-background text-white">
+      <style dangerouslySetInnerHTML={{ __html: PRINT_STYLES }} />
+
       {/* Floating header with brand + nav */}
-      <header className="sticky top-0 z-30 backdrop-blur-md bg-background/70 border-b border-border/30">
-        <div className="max-w-6xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
-          <Link href="/" className="font-display text-lg tracking-tight">
+      <header className="no-print sticky top-0 z-30 backdrop-blur-md bg-background/70 border-b border-border/30">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between gap-3">
+          <Link href="/" className="font-display text-lg tracking-tight whitespace-nowrap">
             LA<span className="text-accent">·</span>PIZARRA
           </Link>
-          <div className="flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-white/50">
+          <div className="hidden md:flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-white/50">
             <span>Deck</span>
             <span className="text-white/20">·</span>
             <span>2026</span>
           </div>
-          <Link
-            href="/precios"
-            className="text-[11px] uppercase tracking-[0.18em] text-white/70 hover:text-white"
-          >
-            Precios →
-          </Link>
+          <div className="flex items-center gap-2">
+            <DownloadDeckButton />
+            <Link
+              href="/precios"
+              className="hidden sm:inline text-[11px] uppercase tracking-[0.18em] text-white/70 hover:text-white"
+            >
+              Precios →
+            </Link>
+          </div>
         </div>
       </header>
 
       {/* SLIDE 01 — Cover */}
-      <section className="min-h-[92vh] flex flex-col justify-center px-4 md:px-6 py-20 md:py-28 max-w-6xl mx-auto">
+      <section className="deck-slide min-h-[92vh] flex flex-col justify-center px-4 md:px-6 py-20 md:py-28 max-w-6xl mx-auto">
         <SlideTag index={1} total={TOTAL} eyebrow="Cover" />
         <p className="text-[11px] uppercase tracking-[0.22em] text-white/40 mb-4">
           Fútbol amateur · 2026
@@ -173,10 +232,10 @@ export default function DeckPage() {
         </div>
       </section>
 
-      <div className="border-t border-border/30" />
+      <div className="no-print border-t border-border/30" />
 
       {/* SLIDE 02 — Problem */}
-      <section className="min-h-[92vh] flex flex-col justify-center px-4 md:px-6 py-20 md:py-28 max-w-6xl mx-auto">
+      <section className="deck-slide min-h-[92vh] flex flex-col justify-center px-4 md:px-6 py-20 md:py-28 max-w-6xl mx-auto">
         <SlideTag index={2} total={TOTAL} eyebrow="El problema" />
         <h2 className="font-display text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight max-w-4xl">
           265 millones juegan al fútbol.<br />
@@ -225,10 +284,10 @@ export default function DeckPage() {
         </p>
       </section>
 
-      <div className="border-t border-border/30" />
+      <div className="no-print border-t border-border/30" />
 
       {/* SLIDE 03 — Market */}
-      <section className="min-h-[92vh] flex flex-col justify-center px-4 md:px-6 py-20 md:py-28 max-w-6xl mx-auto">
+      <section className="deck-slide min-h-[92vh] flex flex-col justify-center px-4 md:px-6 py-20 md:py-28 max-w-6xl mx-auto">
         <SlideTag index={3} total={TOTAL} eyebrow="El mercado" />
         <h2 className="font-display text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight max-w-4xl">
           Mercado de US$10B.<br />
@@ -318,10 +377,10 @@ export default function DeckPage() {
         </div>
       </section>
 
-      <div className="border-t border-border/30" />
+      <div className="no-print border-t border-border/30" />
 
       {/* SLIDE 04 — Solution */}
-      <section className="min-h-[92vh] flex flex-col justify-center px-4 md:px-6 py-20 md:py-28 max-w-6xl mx-auto">
+      <section className="deck-slide min-h-[92vh] flex flex-col justify-center px-4 md:px-6 py-20 md:py-28 max-w-6xl mx-auto">
         <SlideTag index={4} total={TOTAL} eyebrow="La solución" />
         <h2 className="font-display text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight max-w-4xl">
           Tres capas.<br />
@@ -388,10 +447,10 @@ export default function DeckPage() {
         </div>
       </section>
 
-      <div className="border-t border-border/30" />
+      <div className="no-print border-t border-border/30" />
 
       {/* SLIDE 05 — Pricing & Unit Economics */}
-      <section className="min-h-[92vh] flex flex-col justify-center px-4 md:px-6 py-20 md:py-28 max-w-6xl mx-auto">
+      <section className="deck-slide min-h-[92vh] flex flex-col justify-center px-4 md:px-6 py-20 md:py-28 max-w-6xl mx-auto">
         <SlideTag index={5} total={TOTAL} eyebrow="Pricing & Unit Economics" />
         <h2 className="font-display text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight max-w-4xl">
           ARPU US$700.<br />
@@ -474,10 +533,10 @@ export default function DeckPage() {
         </p>
       </section>
 
-      <div className="border-t border-border/30" />
+      <div className="no-print border-t border-border/30" />
 
       {/* SLIDE 06 — GTM */}
-      <section className="min-h-[92vh] flex flex-col justify-center px-4 md:px-6 py-20 md:py-28 max-w-6xl mx-auto">
+      <section className="deck-slide min-h-[92vh] flex flex-col justify-center px-4 md:px-6 py-20 md:py-28 max-w-6xl mx-auto">
         <SlideTag index={6} total={TOTAL} eyebrow="Go-to-Market" />
         <h2 className="font-display text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight max-w-4xl">
           SEO. Instagram.<br />
@@ -613,10 +672,10 @@ export default function DeckPage() {
         </div>
       </section>
 
-      <div className="border-t border-border/30" />
+      <div className="no-print border-t border-border/30" />
 
       {/* SLIDE 07 — Comps & Why now */}
-      <section className="min-h-[92vh] flex flex-col justify-center px-4 md:px-6 py-20 md:py-28 max-w-6xl mx-auto">
+      <section className="deck-slide min-h-[92vh] flex flex-col justify-center px-4 md:px-6 py-20 md:py-28 max-w-6xl mx-auto">
         <SlideTag index={7} total={TOTAL} eyebrow="Comparables · Why now" />
         <h2 className="font-display text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight max-w-4xl">
           TeamSnap: 15M usuarios.<br />
@@ -711,10 +770,10 @@ export default function DeckPage() {
         </div>
       </section>
 
-      <div className="border-t border-border/30" />
+      <div className="no-print border-t border-border/30" />
 
       {/* SLIDE 08 — Plan */}
-      <section className="min-h-[92vh] flex flex-col justify-center px-4 md:px-6 py-20 md:py-28 max-w-6xl mx-auto">
+      <section className="deck-slide min-h-[92vh] flex flex-col justify-center px-4 md:px-6 py-20 md:py-28 max-w-6xl mx-auto">
         <SlideTag index={8} total={TOTAL} eyebrow="El plan · 100K ligas" />
         <h2 className="font-display text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight max-w-4xl">
           100.000 ligas.<br />
@@ -820,7 +879,7 @@ export default function DeckPage() {
       </section>
 
       {/* Sources */}
-      <section className="border-t border-border/30 px-4 md:px-6 py-16 max-w-6xl mx-auto">
+      <section className="deck-sources border-t border-border/30 px-4 md:px-6 py-16 max-w-6xl mx-auto">
         <p className="text-[10px] uppercase tracking-[0.22em] text-white/40 mb-6">
           Fuentes
         </p>
@@ -850,7 +909,7 @@ export default function DeckPage() {
         </p>
       </section>
 
-      <footer className="border-t border-border/30 px-4 md:px-6 py-8 max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <footer className="no-print border-t border-border/30 px-4 md:px-6 py-8 max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">
           LaPizarra · Deck 2026 · Confidencial
         </p>
