@@ -5,6 +5,7 @@ import {
   Globe,
   Goal,
   ListOrdered,
+  Radio,
   Sparkles,
   Swords,
   Trophy,
@@ -21,9 +22,9 @@ import { MockStandings } from '@/components/marketing/mock-standings'
 import { MockBracket } from '@/components/marketing/mock-bracket'
 
 export const metadata: Metadata = {
-  title: 'LaPizarra para ligas — Fixtures, brackets y standings sin planillas.',
+  title: 'LaPizarra para ligas — Fixtures, brackets, streaming en vivo.',
   description:
-    '¿Liga amateur con varios equipos? Maneja fixtures, llaves eliminatorias, tabla y goleadores. Comparte la vista pública con un link.',
+    'Liga amateur con varios equipos: fixtures, llaves eliminatorias, tabla, goleadores y streaming en vivo opcional. Pro Liga $499K CLP/año · Liga + Streaming $1,49M CLP/año.',
 }
 
 export default function ParaLigasPage() {
@@ -120,6 +121,61 @@ export default function ParaLigasPage() {
               title="Multi-temporada"
               description="Apertura, Clausura, 2025, 2026. Histórico que no se borra."
             />
+            <FeatureCard
+              icon={Radio}
+              title="Streaming en vivo (opcional)"
+              description="Conecta tu cámara o celular vía RTMP. Cada partido queda grabado, con clips automáticos de goles. Tier Liga + Streaming."
+            />
+          </div>
+        </section>
+
+        {/* Pricing teaser */}
+        <section className="pb-12">
+          <div className="bg-card border border-border/30 rounded-2xl p-6 md:p-8">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 mb-2">
+              Cuánto cuesta
+            </p>
+            <h3 className="font-display text-xl md:text-2xl leading-tight mb-4">
+              Dos formas de pagar tu liga.
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="border border-accent/30 rounded-xl p-4">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-accent mb-1">
+                  Pro Liga
+                </p>
+                <p className="font-display text-2xl tabular-nums">$499.000</p>
+                <p className="text-[11px] text-white/50">CLP / año / liga</p>
+                <p className="text-xs text-white/70 mt-2 leading-relaxed">
+                  Admin completa: brackets, standings, vista pública, PDF, generador automático.
+                </p>
+              </div>
+              <div className="border border-border/40 rounded-xl p-4">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-white/50 mb-1">
+                  Liga + Streaming
+                </p>
+                <p className="font-display text-2xl tabular-nums">$1.490.000</p>
+                <p className="text-[11px] text-white/50">CLP / año / liga</p>
+                <p className="text-xs text-white/70 mt-2 leading-relaxed">
+                  Todo Pro Liga + transmisión en vivo, on-demand y clips de goles.
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-white/50 leading-relaxed">
+              ¿Federación con más de una liga? Pricing custom — escribinos a{' '}
+              <a href="mailto:hola@lapizarra.app" className="text-accent underline">
+                hola@lapizarra.app
+              </a>
+              . Hoy todos los planes están en lista de espera; las primeras ligas las activamos
+              manualmente uno a uno.
+            </p>
+            <div className="mt-5">
+              <Link
+                href="/precios"
+                className="inline-flex items-center gap-2 text-xs text-white/80 hover:text-white border border-white/15 hover:border-white/30 px-4 py-2.5 rounded-xl font-display uppercase tracking-wide transition-colors"
+              >
+                Ver todos los planes →
+              </Link>
+            </div>
           </div>
         </section>
       </div>

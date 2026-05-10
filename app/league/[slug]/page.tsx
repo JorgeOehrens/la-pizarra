@@ -230,9 +230,10 @@ export default async function LeaguePage({ params }: { params: Params }) {
               Pro Liga · Beta gratis
             </p>
             <p className="text-xs text-white/70 leading-relaxed">
-              Estás usando la liga sin costo durante la beta. Cuando lancemos
-              cobramos <span className="font-medium text-white">$10.000 CLP/año por liga</span>;
-              te avisamos por email antes.
+              Estás usando la liga sin costo durante la beta. Cuando lancemos: Pro Liga{' '}
+              <span className="font-medium text-white">$499.000 CLP/año</span> o Liga + Streaming{' '}
+              <span className="font-medium text-white">$1.490.000 CLP/año</span>. Te avisamos
+              por email antes de cualquier cobro.
             </p>
           </div>
         )}

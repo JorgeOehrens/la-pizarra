@@ -8,7 +8,7 @@ import { WaitlistForm } from '@/components/marketing/waitlist-form'
 export const metadata: Metadata = {
   title: 'LaPizarra — Precios.',
   description:
-    'Equipos y jugadores: gratis para siempre. Ligas: $10.000 CLP/año por liga, en lista de espera durante la beta.',
+    'Equipos y jugadores: gratis para siempre. Pro Liga desde $499.000 CLP/año. Liga con streaming en vivo desde $1.490.000 CLP/año. Federación: pricing custom.',
 }
 
 const FREE = [
@@ -32,10 +32,34 @@ const PRO = [
   'Soporte por email',
 ]
 
+const STREAMING = [
+  'Todo lo de Pro Liga',
+  'Transmisión en vivo (RTMP / cámara compatible)',
+  'On-demand: cada partido queda grabado',
+  'Clips automáticos de goles y momentos clave',
+  'Player embebido en la vista pública de la liga',
+  'Marca de agua y branding de la liga',
+  'Storage incluido por temporada',
+  'Soporte prioritario',
+]
+
+const FEDERACION = [
+  'Multi-liga y multi-temporada bajo una org',
+  'Branding propio + dominio custom',
+  'Reportería para federación / sponsors',
+  'Boleta y factura electrónica',
+  'Onboarding asistido + soporte SLA',
+  'Streaming incluido (volumen acordado)',
+]
+
 const FAQ = [
   {
-    q: '¿Por qué solo cobran a las ligas?',
-    a: 'Porque son las que más laburo se ahorran. Equipos y jugadores son el motor del producto, no tiene sentido cobrarles.',
+    q: '¿Por qué cobran a las ligas y no a los equipos?',
+    a: 'Porque son las que más laburo se ahorran y las que mueven dinero (cuotas, sponsors, premios). Equipos y jugadores son el motor del producto, no tiene sentido cobrarles.',
+  },
+  {
+    q: '¿Necesito una cámara especial para el streaming?',
+    a: 'No. Cualquier cámara que emita por RTMP funciona — celular con app de streaming, GoPro Hero 11+, cámaras tipo Veo/Pixellot, o un encoder OBS desde una notebook. Te entregamos la URL y la stream key, y la liga decide qué cámara usar.',
   },
   {
     q: '¿Qué pasa cuando se abra Pro Liga?',
@@ -46,12 +70,12 @@ const FAQ = [
     a: 'No. La liga queda en read-only y los datos están a la vista. Podés volver a activar cuando quieras.',
   },
   {
-    q: '¿Aceptan transferencia o Mercado Pago?',
-    a: 'Cuando se abra Pro Liga, sí. Hoy estamos validando — anótate y te avisamos.',
+    q: '¿Aceptan transferencia, Mercado Pago o factura?',
+    a: 'Cuando se abra Pro Liga, sí. Federación incluye boleta y factura electrónica desde el día uno.',
   },
   {
     q: '¿Qué pasa si manejo más de una liga?',
-    a: 'Cada liga se cobra por separado. Si tienes federación con varias ligas, escríbenos para pricing custom.',
+    a: 'Cada liga paga por separado en Pro Liga y Liga con Streaming. Si manejás una federación con varias ligas, el plan Federación te conviene — escribinos para pricing custom.',
   },
 ]
 
@@ -68,15 +92,16 @@ export default function PreciosPage() {
           Precios
         </p>
         <h1 className="font-display text-4xl md:text-6xl leading-[1.05] mb-4">
-          Hoy los equipos juegan gratis. Las ligas se anotan.
+          Equipos gratis. Ligas con admin o streaming. Federación a medida.
         </h1>
         <p className="text-white/60 text-base md:text-lg leading-relaxed max-w-2xl mx-auto">
-          Estamos abriendo Pro Liga de a poco. Mientras, todo lo demás está abierto y sin compromiso.
+          Estamos abriendo Pro Liga y Liga + Streaming de a poco. Equipos y jugadores siempre
+          gratis. Federación: pricing custom según tamaño.
         </p>
       </div>
 
       {/* Plans */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-16">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         {/* Free */}
         <div className="bg-card border border-border/30 rounded-2xl p-6 md:p-8 flex flex-col">
           <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 mb-2">
@@ -86,7 +111,8 @@ export default function PreciosPage() {
           <p className="mt-3 text-sm text-white/60">
             Para siempre. Sin tarjeta, sin compromiso.
           </p>
-          <p className="mt-5 font-display text-5xl tabular-nums">$0</p>
+          <p className="mt-5 font-display text-4xl md:text-5xl tabular-nums">$0</p>
+          <p className="text-xs text-white/40 mt-1">CLP / siempre</p>
 
           <ul className="mt-6 space-y-3 flex-1">
             {FREE.map((feat) => (
@@ -118,9 +144,12 @@ export default function PreciosPage() {
           <p className="mt-3 text-sm text-white/60">
             Para ligas amateur con varios equipos y temporadas.
           </p>
-          <p className="mt-5 font-display text-5xl tabular-nums">
-            $10.000
-            <span className="text-sm text-white/50 ml-2 align-middle">CLP / año / liga</span>
+          <p className="mt-5 font-display text-4xl md:text-5xl tabular-nums">$499.000</p>
+          <p className="text-xs text-white/50 mt-1">
+            CLP / año / liga · facturación anual
+          </p>
+          <p className="text-[11px] text-white/35 mt-1">
+            Equivale a ~$41.500 CLP/mes
           </p>
 
           <ul className="mt-6 space-y-3 flex-1">
@@ -140,20 +169,95 @@ export default function PreciosPage() {
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
+
+        {/* Liga con Streaming */}
+        <div className="relative bg-card border border-border/30 rounded-2xl p-6 md:p-8 flex flex-col">
+          <span className="absolute -top-3 left-6 inline-flex items-center gap-1 bg-white/10 text-white px-3 py-1 rounded-full text-[10px] uppercase tracking-[0.2em] font-medium">
+            En lista de espera
+          </span>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 mb-2">
+            Liga con cámara o streaming
+          </p>
+          <h2 className="font-display text-3xl md:text-4xl leading-none">Liga + Streaming</h2>
+          <p className="mt-3 text-sm text-white/60">
+            Transmisión en vivo + clips on-demand para tu liga.
+          </p>
+          <p className="mt-5 font-display text-4xl md:text-5xl tabular-nums">$1.490.000</p>
+          <p className="text-xs text-white/50 mt-1">
+            CLP / año / liga · facturación anual
+          </p>
+          <p className="text-[11px] text-white/35 mt-1">
+            Equivale a ~$124.000 CLP/mes
+          </p>
+
+          <ul className="mt-6 space-y-3 flex-1">
+            {STREAMING.map((feat) => (
+              <li key={feat} className="flex items-start gap-3 text-sm">
+                <Check className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+                <span className="text-white/80">{feat}</span>
+              </li>
+            ))}
+          </ul>
+
+          <Link
+            href="#waitlist-streaming"
+            className="mt-7 inline-flex items-center justify-center gap-2 border border-white/15 text-white py-3.5 rounded-xl font-display uppercase tracking-wide hover:border-white/30 active:scale-[0.98] transition-all"
+          >
+            Anotarme al waitlist
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
       </div>
 
-      {/* Federation strip */}
-      <div className="bg-card border border-dashed border-border/60 rounded-xl p-5 md:p-6 mb-16 flex flex-col md:flex-row items-start md:items-center gap-4">
-        <Mail className="h-6 w-6 text-accent shrink-0" />
-        <div className="flex-1">
-          <p className="font-medium text-sm">¿Federación con más de 50 equipos?</p>
-          <p className="text-xs text-white/60 mt-1">
-            Pricing custom y onboarding asistido. Escríbenos a{' '}
+      {/* Federación tier */}
+      <div className="bg-card border border-border/30 rounded-2xl p-6 md:p-8 mb-16">
+        <div className="flex flex-col md:flex-row md:items-start gap-6">
+          <div className="flex-1">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 mb-2">
+              Federación / multi-liga
+            </p>
+            <h2 className="font-display text-2xl md:text-3xl leading-none mb-3">
+              Federación
+            </h2>
+            <p className="text-sm text-white/60 mb-4 max-w-xl leading-relaxed">
+              Para organizaciones con más de una liga, más de 50 equipos, o requisitos de
+              facturación, branding y soporte propios. Pricing custom según volumen.
+            </p>
+            <p className="font-display text-3xl md:text-4xl tabular-nums">
+              Custom
+              <span className="text-sm text-white/50 ml-2 align-middle font-sans">
+                contacto directo
+              </span>
+            </p>
+          </div>
+
+          <ul className="md:w-1/2 space-y-2.5">
+            {FEDERACION.map((feat) => (
+              <li key={feat} className="flex items-start gap-3 text-sm">
+                <Check className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+                <span className="text-white/80">{feat}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-6 border-t border-border/30">
+          <Mail className="h-5 w-5 text-accent shrink-0" />
+          <p className="text-xs text-white/60 flex-1">
+            Escribinos a{' '}
             <a href="mailto:hola@lapizarra.app" className="text-accent underline">
               hola@lapizarra.app
-            </a>
-            .
+            </a>{' '}
+            con el detalle de tu federación (cantidad de ligas, equipos, temporadas) y te
+            armamos una propuesta.
           </p>
+          <a
+            href="mailto:hola@lapizarra.app?subject=Federaci%C3%B3n%20%E2%80%94%20LaPizarra"
+            className="inline-flex items-center justify-center gap-2 border border-white/15 text-white px-5 py-3 rounded-xl text-xs font-display uppercase tracking-wide hover:border-white/30 active:scale-[0.98] transition-all"
+          >
+            Contactar
+            <ArrowRight className="h-3.5 w-3.5" />
+          </a>
         </div>
       </div>
 
@@ -192,24 +296,52 @@ export default function PreciosPage() {
         </div>
       </section>
 
-      {/* Pro Liga waitlist (always visible) */}
-      <section id="waitlist" className="bg-card border border-border/30 rounded-2xl p-6 md:p-10 max-w-2xl mx-auto">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-accent mb-2">
-          Lista de espera Pro Liga
-        </p>
-        <h2 className="font-display text-2xl md:text-3xl leading-tight mb-3">
-          Avísame cuando se abra.
-        </h2>
-        <p className="text-sm text-white/60 mb-6 leading-relaxed">
-          Estamos abriendo accesos uno a uno. Déjanos tu email y te escribimos cuando podás crear tu liga
-          con 30 días gratis.
-        </p>
-        <WaitlistForm
-          audience="ligas"
-          source="/precios#waitlist"
-          successCopy="Listo. Te mandamos un email apenas habilitemos tu acceso."
-        />
-      </section>
+      {/* Waitlists */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
+        {/* Pro Liga waitlist */}
+        <section
+          id="waitlist"
+          className="bg-card border border-border/30 rounded-2xl p-6 md:p-8"
+        >
+          <p className="text-[10px] uppercase tracking-[0.2em] text-accent mb-2">
+            Waitlist Pro Liga
+          </p>
+          <h2 className="font-display text-xl md:text-2xl leading-tight mb-3">
+            Avísame cuando se abra.
+          </h2>
+          <p className="text-sm text-white/60 mb-6 leading-relaxed">
+            Estamos abriendo accesos uno a uno. Déjanos tu email y te escribimos cuando puedas
+            crear tu liga con 30 días gratis.
+          </p>
+          <WaitlistForm
+            audience="ligas"
+            source="/precios#waitlist"
+            successCopy="Listo. Te mandamos un email apenas habilitemos tu acceso."
+          />
+        </section>
+
+        {/* Streaming waitlist */}
+        <section
+          id="waitlist-streaming"
+          className="bg-card border border-border/30 rounded-2xl p-6 md:p-8"
+        >
+          <p className="text-[10px] uppercase tracking-[0.2em] text-white/50 mb-2">
+            Waitlist Liga + Streaming
+          </p>
+          <h2 className="font-display text-xl md:text-2xl leading-tight mb-3">
+            Quiero transmitir mis partidos.
+          </h2>
+          <p className="text-sm text-white/60 mb-6 leading-relaxed">
+            Estamos cerrando los primeros pilotos. Anótate y coordinamos cómo conectar tu cámara
+            o celular a la transmisión de tu liga.
+          </p>
+          <WaitlistForm
+            audience="ligas"
+            source="/precios#waitlist-streaming"
+            successCopy="Listo. Te contactamos para coordinar el piloto de streaming."
+          />
+        </section>
+      </div>
     </div>
   )
 }

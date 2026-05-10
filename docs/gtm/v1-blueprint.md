@@ -26,7 +26,7 @@
 | Tracking de eventos / analytics | NO IMPLEMENTADO | Solo `@vercel/analytics` para pageviews. |
 | Email transaccional | NO IMPLEMENTADO | Sin Resend / Postmark. |
 
-**Fase de producto:** validación. Hipótesis clave a probar = "las ligas amateur están dispuestas a pagar **$10.000 CLP/año** por administrar su torneo en LaPizarra." Antes de cobrar, capturamos intención (waitlist).
+**Fase de producto:** validación. Hipótesis clave a probar = "las ligas amateur están dispuestas a pagar **$499.000 CLP/año** por administrar su torneo, y **$1.490.000 CLP/año** si además incluye streaming en vivo + on-demand." Antes de cobrar, capturamos intención (waitlist) y corremos pilotos pagados manuales con las primeras 5–10 ligas.
 
 ---
 
@@ -36,17 +36,19 @@
 **League-driven SaaS con teams freemium y crecimiento viral por jugadores.**
 
 ### 1.2 Hipótesis de negocio (a validar en V1)
-1. Las **ligas pagan** porque les ahorra horas semanales y profesionaliza su torneo.
-2. Los **equipos** son free para siempre porque son el lead generator + memoria del jugador.
-3. Los **jugadores** crecen virales: cada jugador rota a otros equipos y trae a sus amigos.
-4. Hay upsells futuros para teams premium (Instagram CM tools, stats avanzadas, video). **Out of V1.**
+1. Las **ligas pagan Pro Liga ($499K CLP/año)** porque les ahorra horas semanales y profesionaliza su torneo.
+2. Una fracción de esas ligas hace **upsell a Liga + Streaming ($1,49M CLP/año)** porque les permite transmitir partidos en vivo, generar clips, y monetizar con sponsors.
+3. **Federaciones** (multi-liga, >50 equipos, requisitos de facturación) pagan **pricing custom** a partir de un piso defendible.
+4. Los **equipos** son free para siempre porque son el lead generator + memoria del jugador.
+5. Los **jugadores** crecen virales: cada jugador rota a otros equipos y trae a sus amigos.
+6. Hay upsells futuros para teams premium (Instagram CM tools, stats avanzadas, perfil pro). **Out of V1.**
 
 ### 1.3 Funnel de adquisición (prevista)
 1. Manager crea equipo gratis → invita jugadores → activa equipo (3+ jugadores, 1+ partido).
 2. Jugadores tocan la app, se enganchan, traen a otros equipos (viral player loop).
-3. Una liga local descubre LaPizarra (vía un equipo o por marketing) → se anota al waitlist.
+3. Una liga local descubre LaPizarra (vía un equipo o por marketing) → se anota al waitlist (Pro Liga o Streaming según interés).
 4. La liga organiza temporada → invita N equipos → todos los teams ya estaban en LaPizarra → fricción cero.
-5. Cuando V2: la liga paga $10k al año, recibe brackets/standings/vista pública.
+5. Cuando se abra cobro: la liga paga $499K/año por Pro Liga, o $1,49M/año si quiere transmitir; recibe brackets/standings/vista pública (+ player de streaming en el tier alto).
 
 ### 1.4 Posicionamiento
 
@@ -108,33 +110,60 @@ Entre el WhatsApp informal (gratis, caos) y el software profesional caro (FIFA, 
 | Tier | Audiencia | Precio | Estado V1 |
 | --- | --- | --- | --- |
 | **Free** | Teams + Players | $0 — para siempre | LIVE |
-| **Pro Liga** | Organizadores de liga | **$10.000 CLP/año por liga** | Waitlist (sin cobro) |
-| **Federación** | >50 equipos / >3 ligas en una org | Custom (contacto) | Out of V1 |
-| **Team Premium** (futuro) | Teams que quieren CM tools, video, etc. | TBD | Out of V1 |
+| **Pro Liga** | Organizadores de liga amateur | **$499.000 CLP / año / liga** (~$41.500/mes) | Waitlist (sin cobro) — pilotos manuales con primeras 5–10 ligas |
+| **Liga + Streaming** | Liga que quiere transmitir partidos | **$1.490.000 CLP / año / liga** (~$124.000/mes) | Waitlist — piloto coordinado |
+| **Federación** | Multi-liga / >50 equipos / requisitos formales | Custom (contacto directo) | Sales-led desde día uno |
+| **Team Premium** (futuro) | Teams que quieren CM tools, perfil pro, etc. | TBD | Out of V1 |
 
-### 4.2 Lo que incluye **Pro Liga**
+### 4.2 Lo que incluye **Pro Liga** ($499K/año)
 
-- Crear ligas (hoy gated por flag → sin pago).
+- Crear ligas (workspace propio).
 - Brackets, standings, top scorers, top assists.
-- Vista pública con marca.
+- Vista pública compartible con marca.
 - PDF de fixtures.
 - Auto-generador de torneo completo.
+- Multi-temporada (Apertura/Clausura, anuales).
 - Soporte por email.
 
-### 4.3 Lo que NO incluye Pro Liga (V1)
-- Pagos directos por la app a los equipos miembros (out of scope).
-- Notificaciones automáticas a equipos.
-- Streaming / video.
-- Custom domain.
+### 4.3 Lo que incluye **Liga + Streaming** ($1,49M/año)
 
-### 4.4 Trial
-- **30 días free** al activar pago. No se cobra hasta confirmar (no charge upfront).
+- Todo lo de Pro Liga.
+- Ingest RTMP (la liga conecta su cámara: celular, GoPro, Veo/Pixellot, OBS).
+- Transmisión en vivo de partidos.
+- On-demand: cada partido queda grabado.
+- Clips automáticos de goles y momentos clave.
+- Player embebido en la vista pública de la liga.
+- Marca de agua y branding de la liga sobre el video.
+- Storage incluido por temporada (cap por liga, definir en piloto).
+- Soporte prioritario.
+
+**Costos a considerar (no es trivial):**
+- Mux / Livepeer / Cloudflare Stream: ~$0.005–0.01 USD por minuto encodeado + storage.
+- Liga de 16 equipos × 8 fechas × 2 partidos × 90 min ≈ 23K min/temporada → ~$200–300 USD/temporada en infra de video.
+- A $1,49M CLP de revenue/año (~$1.500 USD), el margen es alto si la liga no abusa del storage. Cap por SLA.
+
+### 4.4 Lo que incluye **Federación** (Custom)
+
+- Multi-liga / multi-temporada bajo una org.
+- Branding propio + dominio custom.
+- Reportería para federación / sponsors.
+- Boleta y factura electrónica desde día uno.
+- Onboarding asistido + soporte SLA.
+- Streaming incluido (volumen acordado en contrato).
+- Pricing custom según volumen — piso sugerido **$3.500.000 CLP/año**.
+
+### 4.5 Trial
+- **30 días free** al activar pago de Pro Liga o Streaming. No se cobra hasta confirmar (no charge upfront).
 - Si la liga no convierte: queda en read-only. Datos no se borran.
+- Federación no tiene trial estándar — se acuerda en la propuesta.
 
-### 4.5 V1 actual: **NO se cobra**
-- `/precios` muestra los planes con claridad.
-- Botón "Pro Liga" → **abre formulario de waitlist** (no checkout).
-- Cuando lleguemos a **50+ ligas** en waitlist, prendemos Stripe Subscription.
+### 4.6 V1 actual: **NO se cobra (excepto pilotos manuales)**
+- `/precios` muestra los 3 tiers con precios reales.
+- Botón "Pro Liga" → **formulario de waitlist** (no checkout).
+- Botón "Liga + Streaming" → **waitlist separado** (mismo audience='ligas', source distinto).
+- Botón "Federación" → **mailto directo** a `hola@lapizarra.app`.
+- Las primeras 5–10 ligas pagan por **transferencia/Mercado Pago manual** con onboarding asistido del founder, antes de prender Stripe.
+- Trigger para Stripe Subscription: **5 ligas pagando manualmente con renovación confirmada** O **30 ligas en waitlist Pro Liga**, lo que ocurra primero.
 
 ---
 
@@ -375,20 +404,23 @@ Click "Crear liga" en /onboarding o en /para-ligas
 ### 9.2 `/precios`
 
 ```
-┌─ Free (Teams + Players) ──────┐  ┌─ Pro Liga ─────────────────┐
-│ $0 / para siempre              │  │ $10.000 CLP / año / liga   │
-│                                │  │ ── EN LISTA DE ESPERA ──   │
-│ ✓ Equipos ilimitados           │  │                            │
-│ ✓ Partidos + stats             │  │ Todo lo de Free +          │
-│ ✓ Asistencia                   │  │ ✓ Crear liga               │
-│ ✓ Finanzas equipo              │  │ ✓ Brackets + standings     │
-│ ✓ Multi-equipo                 │  │ ✓ Vista pública            │
-│                                │  │ ✓ PDF de fixtures          │
-│  Crear equipo →                │  │ ✓ Generador automático     │
-│                                │  │  Anotarme al waitlist →    │
-└────────────────────────────────┘  └────────────────────────────┘
+┌─ Free ──────────────┐  ┌─ Pro Liga ───────────────┐  ┌─ Liga + Streaming ───────┐
+│ $0 / siempre         │  │ $499.000 CLP/año/liga    │  │ $1.490.000 CLP/año/liga  │
+│                      │  │ ── EN LISTA DE ESPERA ── │  │ ── EN LISTA DE ESPERA ── │
+│ ✓ Equipos ilimitados │  │ Todo lo de Free +        │  │ Todo lo de Pro Liga +    │
+│ ✓ Partidos + stats   │  │ ✓ Crear liga             │  │ ✓ Streaming en vivo      │
+│ ✓ Asistencia         │  │ ✓ Brackets + standings   │  │ ✓ On-demand grabado      │
+│ ✓ Finanzas equipo    │  │ ✓ Vista pública          │  │ ✓ Clips de goles         │
+│ ✓ Multi-equipo       │  │ ✓ PDF de fixtures        │  │ ✓ Player + branding      │
+│                      │  │ ✓ Generador de torneo    │  │ ✓ Storage incluido       │
+│  Crear equipo →      │  │ Anotarme al waitlist →   │  │ Anotarme al waitlist →   │
+└──────────────────────┘  └──────────────────────────┘  └──────────────────────────┘
 
-¿Federación o >50 equipos? Pricing custom — escríbenos.
+┌─ Federación ────────────────────────────────────────────────────────────────┐
+│ Custom · contacto directo                                                    │
+│ Multi-liga + branding propio + boleta/factura + SLA + streaming incluido     │
+│ Piso sugerido: $3.500.000 CLP/año · escribir a hola@lapizarra.app           │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 **FAQ debajo**:
@@ -432,7 +464,7 @@ Cada audience page incluye además su `<WaitlistForm audience="…">` para captu
 Posición: debajo del próximo partido, sutil. Una sola vez (dismissible vía localStorage).
 
 **Banner top en `/league/[slug]/`** (cuando flag ON pero V1):
-> "Pro Liga gratis durante la beta. Cuando lancemos cobramos $10.000/año por liga; te avisamos antes."
+> "Pro Liga gratis durante la beta. Cuando lancemos: $499.000/año por admin, o $1.490.000/año si querés transmitir tus partidos. Te avisamos antes."
 
 ### 10.3 Cuando intenta "crear liga" desde el dashboard sin flag
 
@@ -493,7 +525,9 @@ share_public_league       { method: 'web_share' | 'copy' }
 | Teams creados | `count(*) from teams where deleted_at is null` | 200 en 30 días |
 | Teams activos (30d) | teams con 1+ match en últimos 30d | 50% del total |
 | Players registrados | `count(*) from profiles` | 1.500 |
-| Waitlist Pro Liga | `count(*) from marketing_waitlist where audience='ligas'` | **50** (este es el trigger para Stripe) |
+| Waitlist Pro Liga | `count(*) from marketing_waitlist where audience='ligas' and source like '%/precios#waitlist%' and source not like '%streaming%'` | **30** (trigger Stripe) |
+| Waitlist Streaming | `count(*) from marketing_waitlist where source like '%waitlist-streaming%'` | **15** (señal de demanda real) |
+| Pilotos pagados manuales | ligas con renovación confirmada vía transferencia/MP | **5** (trigger Stripe) |
 | Activation rate (team) | % teams que crean 1 partido en 7d | 40% |
 | Viral coef (player) | players/team promedio | 8+ |
 | Conversion landing → signup | pageviews `/` → `signup_completed` | 5% |
@@ -579,8 +613,11 @@ UTMs estándar:
 - **Riesgo**: nadie llega a la landing porque no hay tráfico. Mitigación: WhatsApp directo a 50+ ligas conocidas en CL/AR primer mes; Instagram con 10 reels en primeras 4 semanas.
 
 ### 14.3 Monetization risk
-- **Riesgo**: $10k/año se siente caro o barato. Mitigación: medir CAC vs LTV con primeros 20 ligas. Si convierten >50% del waitlist a $10k, considerar subir; si convierten <10%, considerar un plan inferior ($5k temporada) o ajustar value props.
-- **Riesgo**: las ligas piden facturación formal antes de pagar. Mitigación: Stripe ya soporta facturación CL básica; emisión de boleta vía servicio externo (Bsale o Defontana) — out of V1, en V2.
+- **Riesgo**: $499K/año (Pro Liga) se siente caro para liga de barrio. Mitigación: medir conversión waitlist → piloto pagado en primeros 60 días. Si <10% del waitlist acepta el piloto a $499K, evaluar split por temporada ($299K/semestre) o "Liga Lite" sin auto-generador a $199K/año. NO bajar el precio anclado de Pro Liga sin reestructurar tiers — el descuento por temporada es preferible al downsell directo.
+- **Riesgo**: $1,49M/año (Streaming) parece muy alto. Realidad: MiCancha/VeoMiPartido cobran $5–15K por **partido individual**. Una liga con 64 partidos/temporada gasta $320K–$960K solo en streaming externo. Mitigación: en outreach, comparar contra ese costo, no contra "software de fixtures".
+- **Riesgo**: la cámara/streaming es responsabilidad de la liga (no la vendemos). Si la liga no tiene equipamiento, la conversión a Streaming muere. Mitigación: partnership informal con proveedores locales de cámaras de fútbol (Veo, KAMERA, etc.) para ofrecer descuento conjunto. Out of V1, pero piloto desde día uno.
+- **Riesgo**: las ligas piden facturación formal antes de pagar. Mitigación: para pilotos manuales, emitir boleta vía Bsale/Defontana al cobrar transferencia. Federación incluye factura desde el inicio. Stripe + boleta automática queda en V2.
+- **Riesgo**: storage de video crece y come margen. Mitigación: cap por liga en SLA del plan ($1,49M cubre X horas/temporada; excedente se cobra aparte o se baja calidad).
 
 ### 14.4 Tech risk
 - **Riesgo**: Resend deja de funcionar / hits cuota. Mitigación: cuota free 3.000/mes alcanza para >1.000 waitlist + transactional. Si excede, mover a SES o pagar Resend ($20/mes).
@@ -591,15 +628,24 @@ UTMs estándar:
 
 ---
 
-## 15. Decisiones que necesito confirmar (antes de ejecutar)
+## 15. Decisiones tomadas y abiertas
 
-- [ ] **Moneda y precio Pro Liga**: $10.000 CLP/año/liga (asumido). Confirmar si es CLP, ARS, USD, otro.
+### 15.1 Tomadas
+- [x] **Modelo de pricing — 3 tiers pagos**: Pro Liga $499.000 CLP/año, Liga + Streaming $1.490.000 CLP/año, Federación custom (piso $3,5M/año).
+- [x] **Moneda V1**: CLP. Argentina y otros países en V2.
+- [x] **Facturación**: anual con trial de 30 días para Pro Liga y Streaming.
+- [x] **Voz**: **tú**.
+- [x] **Páginas marketing**: landing + 3 audiencias + precios (3 tiers + Federación) + términos + privacidad + blog.
+- [x] **Waitlist segmentado**: `audience='ligas'` siempre, diferenciación vía `source` (`/precios#waitlist` vs `/precios#waitlist-streaming`).
+
+### 15.2 Abiertas
+- [ ] **Cap de storage de Streaming** — cuántas horas/temporada incluye el plan antes de cobrar excedente. Decidir antes del primer piloto.
 - [ ] **Resend** como proveedor de email transaccional (free tier suficiente). Alternativa: Postmark, SES.
-- [ ] **PostHog** como analytics (free tier 1M eventos). Alternativa: Plausible (mejor para privacy, menos eventos), Mixpanel (más caro).
-- [ ] **Demo league slug**: ¿armamos una liga interna con datos para que `/para-ligas` muestre `Ver liga de ejemplo`? Puede ser una liga ficticia "Liga Maipú 2026" con 6 equipos placeholder.
-- [ ] **Voz**: confirmado **tú** alineado al resto de la app.
-- [ ] **Páginas extra**: confirmadas — landing + 3 audiencias + precios + términos + privacidad + blog.
-- [ ] **Waitlist en cada audiencia**: confirmado.
+- [ ] **PostHog** como analytics (free tier 1M eventos). Alternativa: Plausible, Mixpanel.
+- [ ] **Demo league slug**: ¿armamos una liga interna con datos para que `/para-ligas` muestre `Ver liga de ejemplo`? Puede ser "Liga Maipú 2026" con 6 equipos placeholder.
+- [ ] **Proveedor de streaming infra**: Mux vs Cloudflare Stream vs Livepeer. Decidir al iniciar piloto.
+- [ ] **Partnership cámaras**: explorar acuerdo con proveedor local (Veo / KAMERA / etc.) — descuento conjunto a la liga. Post-piloto.
+- [ ] **Boleta/factura automática**: Bsale o Defontana. Necesario para Federación; opcional para Pro Liga/Streaming en V2.
 
 ---
 
@@ -644,25 +690,29 @@ UTMs estándar:
 ## 17. Resumen ejecutivo (para founders)
 
 **Qué estamos haciendo**:
-Ship V1 del surface público de LaPizarra, con segmentación por audiencia y waitlist funcional para ligas. Sin Stripe.
+Ship V1 del surface público de LaPizarra, con 3 tiers pagos (Pro Liga, Liga + Streaming, Federación) y waitlist segmentado. Cobro a las primeras ligas vía transferencia/MP manual. Stripe en V1.5.
 
 **Por qué**:
-Validar que las ligas amateur están dispuestas a pagar **$10.000 CLP/año** antes de invertir en flow de pagos. Mientras, hacer crecer la base gratis (teams + players) que es el motor viral.
+Validar que las ligas amateur están dispuestas a pagar **$499K CLP/año por admin** y **$1,49M CLP/año por admin + streaming**, antes de invertir en flow de pagos automático. Mientras, hacer crecer la base gratis (teams + players) que es el motor viral.
 
 **Cuándo**:
-~2–2.5 semanas de un dev part-time. Lanzamiento target: **2026-05-15**.
+~2–2.5 semanas de un dev part-time para shipping marketing + waitlist. Primer piloto pagado target: **2026-06-15**.
 
-**Trigger para activar cobro**:
-50 ligas en waitlist O 5 ligas convertidas manualmente con feedback positivo. Lo que ocurra primero.
+**Trigger para activar Stripe Subscription**:
+30 ligas en waitlist Pro Liga O 5 ligas pagando manualmente con renovación confirmada. Lo que ocurra primero.
 
 **Qué pasa si no funciona**:
-- <20 ligas en waitlist en 60 días → revisamos posicionamiento + precio. Posible downsell a $5k.
+- <10 ligas en waitlist en 60 días → revisamos posicionamiento + precio. Considerar "Liga Lite" a $199K/año o split por temporada ($299K/semestre) antes de bajar Pro Liga full.
+- 0/5 conversión de waitlist a piloto pagado → el problema NO es precio, es value prop. Revisar copy y/o features.
 - <50% activation de teams → mejoramos onboarding (más push al primer partido).
+- Streaming waitlist <5 en 60 días → pausamos el tier, lo dejamos en `/precios` solo como teaser, foco en Pro Liga.
 
 **Qué pasa si funciona**:
-- Activamos Stripe para Pro Liga.
-- Empezamos a pensar Team Premium (Instagram CM tools).
+- Activamos Stripe para Pro Liga + Streaming.
+- Cerramos primeras 2–3 federaciones con propuestas custom.
+- Empezamos a pensar Team Premium (Instagram CM tools, perfil pro de jugador).
 - Expandimos a Argentina con MercadoPago.
+- Partnership con proveedores de cámaras (Veo / KAMERA / etc.).
 
 ---
 

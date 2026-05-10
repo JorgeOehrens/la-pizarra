@@ -2,10 +2,14 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import {
+  ArrowRight,
   BarChart3,
   Calendar,
+  Check,
   Goal,
+  Mail,
   Plus,
+  Radio,
   Smartphone,
   Trophy,
   UserCheck,
@@ -26,7 +30,7 @@ import { WaitlistForm } from '@/components/marketing/waitlist-form'
 export const metadata: Metadata = {
   title: 'LaPizarra — Fútbol amateur, sin perder un partido.',
   description:
-    'La cancha tiene memoria. Gestiona tu liga, tu equipo o tu carrera amateur. Estadísticas, fixtures, asistencia y plata en un solo lugar.',
+    'Equipos y jugadores gratis. Pro Liga $499K CLP/año. Liga + Streaming en vivo $1,49M CLP/año. Federación: pricing custom. Estadísticas, fixtures, asistencia y plata en un solo lugar.',
 }
 
 export default async function LandingPage() {
@@ -61,7 +65,7 @@ export default async function LandingPage() {
             <AudienceTile
               eyebrow="Organizadores"
               title="Manejo una liga"
-              description="Fixtures, brackets y la tabla, sin planillas. Comparte la liga con un link."
+              description="Fixtures, brackets, tabla y vista pública. Streaming en vivo opcional. Pro Liga desde $499.000 CLP/año."
               href="/para-ligas"
               icon={Trophy}
               tag={{ label: 'Lista de espera', tone: 'waitlist' }}
@@ -125,7 +129,12 @@ export default async function LandingPage() {
             <FeatureCard
               icon={Trophy}
               title="Ligas con bracket"
-              description="Llave eliminatoria que avanza sola. Vista pública compartible. Próximamente Pro."
+              description="Llave eliminatoria que avanza sola. Vista pública compartible. Pro Liga $499K/año."
+            />
+            <FeatureCard
+              icon={Radio}
+              title="Streaming en vivo"
+              description="Conecta tu cámara o celular y transmite cada partido. On-demand y clips de goles incluidos."
             />
             <FeatureCard
               icon={Smartphone}
@@ -153,6 +162,125 @@ export default async function LandingPage() {
       </section>
 
       <div className="max-w-5xl mx-auto px-4">
+        {/* Pricing teaser */}
+        <section className="py-16 md:py-24">
+          <SectionHeading
+            eyebrow="Planes"
+            title="Equipos gratis. Las ligas pagan por ahorrarse el trabajo."
+            subtitle="Tres tiers: admin, admin + streaming, y federación a medida. Equipos y jugadores siempre gratis."
+          />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Free */}
+            <div className="bg-card border border-border/30 rounded-2xl p-6 flex flex-col">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 mb-2">
+                Equipos y jugadores
+              </p>
+              <h3 className="font-display text-2xl leading-none">Free</h3>
+              <p className="mt-3 font-display text-3xl tabular-nums">$0</p>
+              <p className="text-[11px] text-white/40 mt-1">CLP / siempre</p>
+              <ul className="mt-4 space-y-2 flex-1 text-xs">
+                <li className="flex items-start gap-2">
+                  <Check className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" />
+                  <span className="text-white/75">Equipos, partidos, stats</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" />
+                  <span className="text-white/75">Asistencia + finanzas</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" />
+                  <span className="text-white/75">Multi-equipo</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Pro Liga */}
+            <div className="relative bg-card border border-accent/40 rounded-2xl p-6 flex flex-col">
+              <span className="absolute -top-3 left-5 inline-flex items-center bg-accent text-black px-3 py-1 rounded-full text-[10px] uppercase tracking-[0.2em] font-medium">
+                Lista de espera
+              </span>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-accent mb-2">
+                Pro Liga
+              </p>
+              <h3 className="font-display text-2xl leading-none">Admin de liga</h3>
+              <p className="mt-3 font-display text-3xl tabular-nums">$499.000</p>
+              <p className="text-[11px] text-white/50 mt-1">
+                CLP / año / liga · ~$41.500/mes
+              </p>
+              <ul className="mt-4 space-y-2 flex-1 text-xs">
+                <li className="flex items-start gap-2">
+                  <Check className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" />
+                  <span className="text-white/75">Brackets + standings + goleadores</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" />
+                  <span className="text-white/75">Vista pública con marca</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" />
+                  <span className="text-white/75">Auto-generador de torneo</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Liga + Streaming */}
+            <div className="relative bg-card border border-border/30 rounded-2xl p-6 flex flex-col">
+              <span className="absolute -top-3 left-5 inline-flex items-center bg-white/10 text-white px-3 py-1 rounded-full text-[10px] uppercase tracking-[0.2em] font-medium">
+                Lista de espera
+              </span>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 mb-2">
+                Liga + Streaming
+              </p>
+              <h3 className="font-display text-2xl leading-none">Liga en vivo</h3>
+              <p className="mt-3 font-display text-3xl tabular-nums">$1.490.000</p>
+              <p className="text-[11px] text-white/50 mt-1">
+                CLP / año / liga · ~$124.000/mes
+              </p>
+              <ul className="mt-4 space-y-2 flex-1 text-xs">
+                <li className="flex items-start gap-2">
+                  <Check className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" />
+                  <span className="text-white/75">Todo lo de Pro Liga</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" />
+                  <span className="text-white/75">Transmisión en vivo + on-demand</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" />
+                  <span className="text-white/75">Clips automáticos de goles</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Federación strip */}
+          <div className="mt-4 bg-card border border-dashed border-border/60 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <Mail className="h-5 w-5 text-accent shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Federación, multi-liga o &gt;50 equipos</p>
+              <p className="text-xs text-white/60 mt-0.5">
+                Branding propio, boleta y factura, soporte SLA. Pricing custom según volumen.
+              </p>
+            </div>
+            <a
+              href="mailto:hola@lapizarra.app?subject=Federaci%C3%B3n%20%E2%80%94%20LaPizarra"
+              className="text-xs text-accent underline whitespace-nowrap"
+            >
+              Escribinos →
+            </a>
+          </div>
+
+          <div className="mt-8 text-center">
+            <Link
+              href="/precios"
+              className="inline-flex items-center gap-2 text-sm text-white/80 hover:text-white border border-white/15 hover:border-white/30 px-5 py-3 rounded-xl font-display uppercase tracking-wide transition-colors"
+            >
+              Ver todos los planes
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </section>
+
         <CTASection
           variant="accent"
           title="Empieza hoy. Crear equipo es gratis."

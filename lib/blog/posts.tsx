@@ -109,8 +109,10 @@ export const POSTS: BlogPost[] = [
         </p>
         <h2>Una nota sobre Pro Liga</h2>
         <p>
-          Hoy estamos en lista de espera. Cuando se abra, son $10.000 CLP/año por
-          liga, con 30 días gratis. Anotate en la página{' '}
+          Hoy estamos en lista de espera. Cuando se abra: Pro Liga $499.000 CLP/año
+          por liga (admin completa), o Liga + Streaming $1.490.000 CLP/año si querés
+          transmitir tus partidos en vivo. Federación con varias ligas: pricing custom.
+          30 días gratis para los planes con trial. Anotate en{' '}
           <a href="/para-ligas">/para-ligas</a> y te avisamos.
         </p>
       </>

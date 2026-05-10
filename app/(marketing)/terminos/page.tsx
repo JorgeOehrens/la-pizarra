@@ -65,10 +65,12 @@ export default function TerminosPage() {
         <section>
           <h2 className="font-display text-xl text-white mb-3">6. Pagos (futuros)</h2>
           <p>
-            Pro Liga es un plan de pago anual ($10.000 CLP / año / liga al lanzamiento). Mientras
-            esté en lista de espera, no se cobra. Cuando habilitemos cobros tendrás un período de
-            prueba antes de cualquier débito. Los términos comerciales específicos se entregarán al
-            momento de activación.
+            LaPizarra ofrece tres planes pagos al lanzamiento: Pro Liga ($499.000 CLP / año /
+            liga), Liga + Streaming ($1.490.000 CLP / año / liga) y Federación (pricing custom
+            según volumen). Mientras estos planes estén en lista de espera, no se cobra. Cuando
+            habilitemos cobros, los planes con trial tendrán un período de prueba antes de
+            cualquier débito. Los términos comerciales específicos se entregarán al momento de
+            activación.
           </p>
         </section>
 
